@@ -139,9 +139,7 @@ export default function ProfilesPage() {
       }
     );
 
-  
-
-      async function handleMessage(
+  async function handleMessage(
     profile
   ) {
     try {
@@ -342,6 +340,66 @@ export default function ProfilesPage() {
     }
 
     return null;
+  }
+
+  function renderSchedules(
+    horaires
+  ) {
+    if (
+      !horaires ||
+      typeof horaires !== "object" ||
+      Object.keys(horaires).length === 0
+    ) {
+      return (
+        <div className="text-sm text-gray-500">
+          Aucun horaire renseigné
+        </div>
+      );
+    }
+
+    const dayLabels = {
+      lundi: "Lundi",
+      mardi: "Mardi",
+      mercredi: "Mercredi",
+      jeudi: "Jeudi",
+      vendredi: "Vendredi",
+      samedi: "Samedi",
+      dimanche: "Dimanche",
+    };
+
+    return Object.entries(horaires).map(
+      ([day, schedule]) => (
+        <div
+          key={day}
+          className="border border-gray-200 rounded-2xl p-4"
+        >
+          <div className="font-semibold text-gray-900 mb-2">
+            {dayLabels[day] || day}
+          </div>
+
+          <div className="space-y-1 text-sm text-gray-600">
+            {schedule?.priseService && (
+              <div>
+                Prise de service :{" "}
+                {schedule.priseService}
+              </div>
+            )}
+
+            {schedule?.depart && (
+              <div>
+                Départ : {schedule.depart}
+              </div>
+            )}
+
+            {schedule?.retour && (
+              <div>
+                Retour : {schedule.retour}
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    );
   }
 
   function renderCompatibilityReasons(
