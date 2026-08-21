@@ -24,3 +24,28 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/*
+ * --------------------------------------------------
+ * CHAMPS DE SAISIE
+ * --------------------------------------------------
+ */
+
+input,
+select,
+textarea {
+  color: #171717;
+  background-color: #ffffff;
+  -webkit-text-fill-color: #171717;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
+
+select option {
+  color: #171717;
+  background-color: #ffffff;
+}
