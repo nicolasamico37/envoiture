@@ -8,11 +8,18 @@ import {
 
 import Card from "@/components/Card";
 
-import LoadingScreen from "@/components/LoadingScreen";
+import LoadingScreen from "@/components/layout/LoadingScreen";
 
-import getCurrentUserProfile from "@/utils/getCurrentUserProfile";
+import { useAuth } from "@/components/providers/AuthProvider";
+
+import { supabase } from "@/lib/supabase";
 
 export default function MessagesPage() {
+  const {
+    profile,
+    loading,
+  } = useAuth();
+
   const [
     conversations,
     setConversations,
@@ -23,86 +30,389 @@ export default function MessagesPage() {
     setSelectedConversation,
   ] = useState(null);
 
-  const [
-    currentProfile,
-    setCurrentProfile,
-  ] = useState(null);
-
   const [message, setMessage] =
     useState("");
 
   const [search, setSearch] =
     useState("");
 
+  const [
+    loadingMessages,
+    setLoadingMessages,
+  ] = useState(true);
+
+  const currentUserId =
+    profile?.utilisateur_id ||
+    profile?.id ||
+    null;
+
+  const currentProfileName =
+    profile
+      ? `${profile.prenom || ""} ${
+          profile.nom || ""
+        }`.trim()
+      : "";
+
   useEffect(() => {
-    const savedMessages =
-      JSON.parse(
-        localStorage.getItem(
-          "envoiture-messages"
-        ) || "[]"
-      );
+    if (!currentUserId) {
+      return;
+    }
 
-    setConversations(
-      savedMessages
-    );
+    async function loadConversations() {
+      setLoadingMessages(true);
 
-    const selectedId =
-      localStorage.getItem(
-        "envoiture-selected-conversation"
-      );
+      try {
+        const {
+          data: conversationRows,
+          error: conversationsError,
+        } = await supabase
+          .from("conversations")
+          .select(
+            `
+              id,
+              type,
+              utilisateur_1_id,
+              utilisateur_2_id,
+              trajet_id,
+              created_at,
+              updated_at
+            `
+          )
+          .or(
+            `utilisateur_1_id.eq.${currentUserId},utilisateur_2_id.eq.${currentUserId}`
+          )
+          .is("archived_at", null)
+          .order(
+            "updated_at",
+            {
+              ascending: false,
+            }
+          );
 
-    if (selectedId) {
-      const foundConversation =
-        savedMessages.find(
-          (conversation) =>
-            conversation.id ===
-            Number(selectedId)
+        if (conversationsError) {
+          throw conversationsError;
+        }
+
+        if (
+          !conversationRows ||
+          conversationRows.length === 0
+        ) {
+          setConversations([]);
+          setSelectedConversation(null);
+          setLoadingMessages(false);
+          return;
+        }
+
+        const otherUserIds =
+          conversationRows.map(
+            (conversation) =>
+              conversation.utilisateur_1_id ===
+              currentUserId
+                ? conversation.utilisateur_2_id
+                : conversation.utilisateur_1_id
+          );
+
+        const uniqueUserIds =
+          [...new Set(otherUserIds)];
+
+        const {
+          data: profileRows,
+          error: profilesError,
+        } = await supabase
+          .from("profils")
+          .select(
+            `
+              utilisateur_id,
+              prenom,
+              nom,
+              secteur
+            `
+          )
+          .in(
+            "utilisateur_id",
+            uniqueUserIds
+          );
+
+        if (profilesError) {
+          throw profilesError;
+        }
+
+        const profileMap =
+          Object.fromEntries(
+            (profileRows || []).map(
+              (item) => [
+                item.utilisateur_id,
+                item,
+              ]
+            )
+          );
+
+        const tripIds =
+          conversationRows
+            .map(
+              (conversation) =>
+                conversation.trajet_id
+            )
+            .filter(Boolean);
+
+        let tripMap = {};
+
+        if (tripIds.length > 0) {
+          const {
+            data: tripRows,
+            error: tripsError,
+          } = await supabase
+            .from("trajets")
+            .select(
+              `
+                id,
+                secteur_depart,
+                secteur_arrivee,
+                date_trajet
+              `
+            )
+            .in(
+              "id",
+              [...new Set(tripIds)]
+            );
+
+          if (tripsError) {
+            throw tripsError;
+          }
+
+          tripMap =
+            Object.fromEntries(
+              (tripRows || []).map(
+                (trip) => [
+                  trip.id,
+                  trip,
+                ]
+              )
+            );
+        }
+
+        const conversationIds =
+          conversationRows.map(
+            (conversation) =>
+              conversation.id
+          );
+
+        const {
+          data: messageRows,
+          error: messagesError,
+        } = await supabase
+          .from("messages")
+          .select(
+            `
+              id,
+              conversation_id,
+              expediteur_id,
+              contenu,
+              created_at
+            `
+          )
+          .in(
+            "conversation_id",
+            conversationIds
+          )
+          .is("archived_at", null)
+          .order(
+            "created_at",
+            {
+              ascending: true,
+            }
+          );
+
+        if (messagesError) {
+          throw messagesError;
+        }
+
+        const messagesByConversation =
+          {};
+
+        (
+          messageRows || []
+        ).forEach((item) => {
+          if (
+            !messagesByConversation[
+              item.conversation_id
+            ]
+          ) {
+            messagesByConversation[
+              item.conversation_id
+            ] = [];
+          }
+
+          messagesByConversation[
+            item.conversation_id
+          ].push(item);
+        });
+
+        const formattedConversations =
+          conversationRows.map(
+            (conversation) => {
+              const otherUserId =
+                conversation.utilisateur_1_id ===
+                currentUserId
+                  ? conversation.utilisateur_2_id
+                  : conversation.utilisateur_1_id;
+
+              const otherProfile =
+                profileMap[
+                  otherUserId
+                ];
+
+              const trip =
+                conversation.trajet_id
+                  ? tripMap[
+                      conversation.trajet_id
+                    ]
+                  : null;
+
+              const conversationMessages =
+                messagesByConversation[
+                  conversation.id
+                ] || [];
+
+              const lastMessage =
+                conversationMessages[
+                  conversationMessages.length -
+                    1
+                ];
+
+              const name =
+                otherProfile
+                  ? `${otherProfile.prenom || ""} ${
+                      otherProfile.nom || ""
+                    }`.trim()
+                  : "Collègue";
+
+              let location =
+                "";
+
+              if (trip) {
+                location =
+                  `${trip.secteur_depart || ""} → ${
+                    trip.secteur_arrivee || ""
+                  }`.trim();
+              } else if (
+                otherProfile?.secteur
+              ) {
+                location =
+                  otherProfile.secteur;
+              }
+
+              return {
+                id:
+                  conversation.id,
+
+                name,
+
+                location,
+
+                lastMessage:
+                  lastMessage
+                    ? lastMessage.contenu
+                    : "",
+
+                messages:
+                  conversationMessages.map(
+                    (item) => ({
+                      id: item.id,
+
+                      from:
+                        item.expediteur_id ===
+                        currentUserId
+                          ? currentProfileName
+                          : name,
+
+                      text:
+                        item.contenu,
+
+                      time:
+                        new Date(
+                          item.created_at
+                        ).toLocaleTimeString(
+                          "fr-FR",
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        ),
+
+                      senderId:
+                        item.expediteur_id,
+                    })
+                  ),
+              };
+            }
+          );
+
+        setConversations(
+          formattedConversations
         );
 
-      if (foundConversation) {
+        const savedConversationId =
+          localStorage.getItem(
+            "envoiture-selected-conversation"
+          );
+
+        const savedConversation =
+          formattedConversations.find(
+            (conversation) =>
+              conversation.id ===
+              savedConversationId
+          );
+
         setSelectedConversation(
-          foundConversation
+          savedConversation ||
+            formattedConversations[0] ||
+            null
         );
+      } catch (error) {
+        console.error(
+          "Erreur chargement messages :",
+          error
+        );
+
+        setConversations([]);
+        setSelectedConversation(null);
+      } finally {
+        setLoadingMessages(false);
       }
     }
 
-    const profile =
-      getCurrentUserProfile();
-
-    setCurrentProfile(profile);
-  }, []);
+    loadConversations();
+  }, [currentUserId, currentProfileName]);
 
   const filteredConversations =
     useMemo(() => {
+      const normalizedSearch =
+        search
+          .toLowerCase()
+          .trim();
+
+      if (!normalizedSearch) {
+        return conversations;
+      }
+
       return conversations.filter(
         (conversation) =>
           conversation.name
             .toLowerCase()
             .includes(
-              search.toLowerCase()
+              normalizedSearch
             ) ||
           conversation.location
             .toLowerCase()
             .includes(
-              search.toLowerCase()
+              normalizedSearch
             )
       );
-    }, [conversations, search]);
-
-  function saveConversations(
-    updatedConversations
-  ) {
-    setConversations(
-      updatedConversations
-    );
-
-    localStorage.setItem(
-      "envoiture-messages",
-      JSON.stringify(
-        updatedConversations
-      )
-    );
-  }
+    }, [
+      conversations,
+      search,
+    ]);
 
   function handleSelectConversation(
     conversation
@@ -117,83 +427,150 @@ export default function MessagesPage() {
     );
   }
 
-  function handleSendMessage() {
+  async function handleSendMessage() {
+    const trimmedMessage =
+      message.trim();
+
     if (
-      !message.trim() ||
+      !trimmedMessage ||
       !selectedConversation ||
-      !currentProfile
+      !currentUserId
     ) {
       return;
     }
 
-    const newMessage = {
-      from:
-        currentProfile.name,
+    const {
+      data: newMessage,
+      error,
+    } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id:
+          selectedConversation.id,
 
-      text: message,
+        expediteur_id:
+          currentUserId,
+
+        contenu:
+          trimmedMessage,
+      })
+      .select(
+        `
+          id,
+          conversation_id,
+          expediteur_id,
+          contenu,
+          created_at
+        `
+      )
+      .single();
+
+    if (error) {
+      console.error(
+        "Erreur envoi message :",
+        error
+      );
+
+      return;
+    }
+
+    await supabase
+      .from("conversations")
+      .update({
+        updated_at:
+          new Date().toISOString(),
+      })
+      .eq(
+        "id",
+        selectedConversation.id
+      );
+
+    const formattedMessage = {
+      id:
+        newMessage.id,
+
+      from:
+        currentProfileName,
+
+      text:
+        newMessage.contenu,
 
       time:
-        new Date().toLocaleTimeString(
+        new Date(
+          newMessage.created_at
+        ).toLocaleTimeString(
           "fr-FR",
           {
             hour: "2-digit",
             minute: "2-digit",
           }
         ),
+
+      senderId:
+        newMessage.expediteur_id,
+    };
+
+    const updatedConversation = {
+      ...selectedConversation,
+
+      lastMessage:
+        newMessage.contenu,
+
+      messages: [
+        ...selectedConversation.messages,
+        formattedMessage,
+      ],
     };
 
     const updatedConversations =
-      conversations.map(
-        (conversation) => {
-          if (
-            conversation.id !==
-            selectedConversation.id
-          ) {
-            return conversation;
-          }
+      conversations
+        .map((conversation) =>
+          conversation.id ===
+          selectedConversation.id
+            ? updatedConversation
+            : conversation
+        );
 
-          return {
-            ...conversation,
-
-            lastMessage:
-              message,
-
-            messages: [
-              ...conversation.messages,
-              newMessage,
-            ],
-          };
-        }
-      );
-
-    saveConversations(
+    setConversations(
       updatedConversations
     );
 
-    const updatedSelected =
-      updatedConversations.find(
-        (conversation) =>
-          conversation.id ===
-          selectedConversation.id
-      );
-
     setSelectedConversation(
-      updatedSelected
+      updatedConversation
     );
 
     setMessage("");
   }
 
-  function handleDeleteConversation(
+  async function handleDeleteConversation(
     id
   ) {
+    const {
+      error,
+    } = await supabase
+      .from("conversations")
+      .update({
+        archived_at:
+          new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error(
+        "Erreur archivage conversation :",
+        error
+      );
+
+      return;
+    }
+
     const updatedConversations =
       conversations.filter(
         (conversation) =>
           conversation.id !== id
       );
 
-    saveConversations(
+    setConversations(
       updatedConversations
     );
 
@@ -202,14 +579,21 @@ export default function MessagesPage() {
       id
     ) {
       setSelectedConversation(
-        null
+        updatedConversations[0] ||
+          null
       );
     }
   }
 
-  if (!currentProfile) {
+  if (
+    loading ||
+    loadingMessages ||
+    !profile
+  ) {
     return (
-      <LoadingScreen text="Chargement des messages..." />
+      <LoadingScreen
+        text="Chargement des messages..."
+      />
     );
   }
 
@@ -223,7 +607,9 @@ export default function MessagesPage() {
               placeholder="Rechercher..."
               value={search}
               onChange={(e) =>
-                setSearch(e.target.value)
+                setSearch(
+                  e.target.value
+                )
               }
               className="w-full border border-gray-200 rounded-2xl px-5 py-3"
             />
@@ -324,8 +710,8 @@ export default function MessagesPage() {
               Sélectionnez une conversation
             </div>
           ) : (
-            <div className="flex flex-col h-full">
-              <div className="flex-1 space-y-4 overflow-y-auto mb-6">
+            <div className="flex flex-col min-h-[500px]">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto mb-6">
                 {selectedConversation.messages
                   ?.length ===
                 0 ? (
@@ -339,12 +725,15 @@ export default function MessagesPage() {
                       index
                     ) => {
                       const mine =
-                        item.from ===
-                        currentProfile.name;
+                        item.senderId ===
+                        currentUserId;
 
                       return (
                         <div
-                          key={index}
+                          key={
+                            item.id ||
+                            index
+                          }
                           className={`flex ${
                             mine
                               ? "justify-end"
@@ -383,7 +772,7 @@ export default function MessagesPage() {
                 )}
               </div>
 
-              <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex flex-col lg:flex-row gap-4 shrink-0 pt-2">
                 <input
                   type="text"
                   placeholder="Écrire un message..."
@@ -401,7 +790,7 @@ export default function MessagesPage() {
                       handleSendMessage();
                     }
                   }}
-                  className="flex-1 border border-gray-200 rounded-2xl px-5 py-4"
+                  className="flex-1 min-w-0 border border-gray-200 rounded-2xl px-5 py-4"
                 />
 
                 <button

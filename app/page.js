@@ -136,7 +136,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <p className="font-bold text-gray-900">
-                          La Riche → Nantes
+                          La Riche → Saint-Pierre des Corps
                         </p>
 
                         <p className="text-gray-500 text-sm">
@@ -160,7 +160,7 @@ export default function HomePage() {
                         </p>
 
                         <p className="text-sm text-gray-500">
-                          Technicentre Nantes
+                          Technicentre Saint-Pierre des Corps
                         </p>
                       </div>
                     </div>

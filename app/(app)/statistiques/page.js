@@ -7,6 +7,8 @@ import {
 
 import Card from "@/components/Card";
 
+import { supabase } from "@/lib/supabase";
+
 export default function StatisticsPage() {
   const [stats, setStats] =
     useState({
@@ -16,53 +18,79 @@ export default function StatisticsPage() {
       notifications: 0,
     });
 
-  useEffect(() => {
-    const trips =
-      JSON.parse(
-        localStorage.getItem(
-          "envoiture-trips"
-        ) || "[]"
-      );
+  
+   useEffect(() => {
+    async function loadStats() {
+      const {
+        data: trips,
+        error: tripsError,
+      } = await supabase
+        .from("trajets")
+        .select("id")
+        .eq("statut", "actif");
 
-    const profiles =
-      JSON.parse(
-        localStorage.getItem(
-          "envoiture-profiles"
-        ) || "[]"
-      );
+      if (tripsError) {
+        console.error(
+          "Erreur récupération statistiques trajets :",
+          tripsError
+        );
+      }
 
-    const messages =
-      JSON.parse(
-        localStorage.getItem(
-          "envoiture-messages"
-        ) || "[]"
-      );
+      const {
+        count: messagesCount,
+        error: messagesError,
+      } = await supabase
+        .from("messages")
+        .select(
+          "id",
+          {
+            count: "exact",
+            head: true,
+          }
+        );
 
-    const notifications =
-      JSON.parse(
-        localStorage.getItem(
-          "envoiture-notifications"
-        ) || "[]"
-      );
+      if (messagesError) {
+        console.error(
+          "Erreur récupération statistiques messages :",
+          messagesError
+        );
+      }
 
-    const totalMessages =
-      messages.reduce(
-        (total, conversation) =>
-          total +
-          conversation.messages.length,
-        0
-      );
+      const {
+        count: notificationsCount,
+        error: notificationsError,
+      } = await supabase
+        .from("notifications")
+        .select(
+          "id",
+          {
+            count: "exact",
+            head: true,
+          }
+        );
 
-    setStats({
-      trips: trips.length,
-      profiles:
-        profiles.length,
-      messages:
-        totalMessages,
-      notifications:
-        notifications.length,
-    });
+      if (notificationsError) {
+        console.error(
+          "Erreur récupération statistiques notifications :",
+          notificationsError
+        );
+      }
+
+      setStats({
+        trips:
+          trips?.length || 0,
+        profiles: 0,
+        messages:
+          messagesCount || 0,
+        notifications:
+          notificationsCount || 0,
+      });
+    }
+
+    loadStats();
   }, []);
+
+
 
   const cards = [
     {

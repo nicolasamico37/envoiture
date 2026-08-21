@@ -15,7 +15,7 @@ export default function LoadingScreen({
               alt="EnVoiture"
               width={96}
               height={96}
-              className="relative rounded-3xl"
+              className="relative rounded-3xl w-[96px] h-auto"
               priority
             />
           </div>
