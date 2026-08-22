@@ -24,7 +24,7 @@ import { supabase } from "@/lib/supabase";
 const links = [
   {
     href: "/dashboard",
-    label: "Dashboard",
+    label: "Tableau de bord",
     icon: "🏠",
   },
 
@@ -56,6 +56,12 @@ const links = [
     href: "/profil",
     label: "Mon profil",
     icon: "🙍",
+  },
+
+  {
+    href: "/aide",
+    label: "Aide",
+    icon: "❓",
   },
 ];
 
