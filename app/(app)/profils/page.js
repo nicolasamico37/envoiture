@@ -554,7 +554,7 @@ export default function ProfilesPage() {
 
         {filteredProfiles.length >
           0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="space-y-4">
             {filteredProfiles.map(
               (profile) => {
                 const compatibilityReasons =
