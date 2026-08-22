@@ -271,6 +271,11 @@ export default function TripsPage() {
   ] = useState("");
 
   const [
+    expandedTripId,
+    setExpandedTripId,
+  ] = useState("");
+  
+  const [
     message,
     setMessage,
   ] = useState("");
@@ -3244,7 +3249,11 @@ async function handleBulkCancel() {
     const isSelected =
       selectedTripId ===
       trip.id;
-
+    
+    const isExpanded =
+      expandedTripId === trip.id ||
+      selectedTripId === trip.id;
+      
     return (
       <div
         id={`trajet-${trip.id}`}
@@ -3258,83 +3267,120 @@ async function handleBulkCancel() {
         }`}
       >
 
-        {canSelect && (
-          <div className="mb-5 flex items-center">
-            <label className="flex items-center gap-3 cursor-pointer text-sm font-medium text-gray-700">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() =>
+            setExpandedTripId(
+              isExpanded ? "" : trip.id
+            )
+          }
+          onKeyDown={(event) => {
+            if (
+              event.key === "Enter" ||
+              event.key === " "
+            ) {
+              event.preventDefault();
+              setExpandedTripId(
+                isExpanded ? "" : trip.id
+              );
+            }
+          }}
+          className="cursor-pointer"
+        >
+
+          <div className="flex items-center gap-4">
+
+            {canSelect && (
               <input
                 type="checkbox"
                 checked={isBulkSelected}
-                onChange={() =>
+                onChange={(event) => {
+                  event.stopPropagation();
                   toggleTripSelection(
-                     trip.id
-                  )
-              }
-              className="w-5 h-5 accent-pink-600"
-            />
+                    trip.id
+                  );
+                }}
+                onClick={(event) =>
+                  event.stopPropagation()
+                }
+                className="w-5 h-5 accent-pink-600 shrink-0"
+                aria-label="Sélectionner ce trajet"
+              />
+            )}
 
-            <span>
-              Sélectionner ce trajet
-            </span>
-          </label>
-        </div>
-      )}
+            <div className="flex-1 min-w-0">
 
-      {isSelected && (
-          <div className="mb-5 bg-pink-100 text-pink-700 rounded-2xl px-4 py-3 font-semibold">
-            🔔 Trajet concerné par cette notification
-          </div>
-        )}
+              <p className="text-sm text-gray-500">
+                {formatDate(
+                  trip.date_trajet
+                )}
+              </p>
 
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
 
-          <div>
+                <span className="font-bold text-gray-900">
+                  {trip.secteur_depart}
+                </span>
 
-            <p className="text-sm text-gray-500 mb-1">
-              {formatDate(
-                trip.date_trajet
-              )}
-            </p>
+                <span className="text-gray-400">
+                  →
+                </span>
 
-            <h2 className="text-2xl font-bold text-gray-900">
-              {trip.secteur_depart}
-            </h2>
+                <span className="font-bold text-gray-900">
+                  {trip.secteur_arrivee}
+                </span>
 
-            <p className="text-gray-400 text-lg">
-              ↕
-            </p>
+              </div>
 
-            <h2 className="text-2xl font-bold text-gray-900">
-              {trip.secteur_arrivee}
-            </h2>
+            </div>
 
-          </div>
-
-          <div
-            className={`px-4 py-2 rounded-full font-semibold w-fit ${
-              isPast
-                ? "bg-gray-300 text-gray-600"
+            <div
+              className={`px-4 py-2 rounded-full font-semibold w-fit shrink-0 ${
+                isPast
+                  ? "bg-gray-300 text-gray-600"
+                  : isFull
+                  ? "bg-gray-200 text-gray-700"
+                  : "bg-pink-100 text-pink-700"
+              }`}
+            >
+              🚗{" "}
+              {isPast
+                ? "Trajet passé"
                 : isFull
-                ? "bg-gray-200 text-gray-700"
-                : "bg-pink-100 text-pink-700"
-            }`}
-          >
-            🚗{" "}
-            {isPast
-              ? "Trajet passé"
-              : isFull
-              ? "Complet"
-              : `${availablePlaces} place${
-                  availablePlaces > 1
-                    ? "s"
-                    : ""
-                } disponible${
-                  availablePlaces > 1
-                    ? "s"
-                    : ""
-                }`}
+                ? "Complet"
+                : `${availablePlaces} place${
+                    availablePlaces > 1
+                      ? "s"
+                      : ""
+                  } disponible${
+                    availablePlaces > 1
+                      ? "s"
+                      : ""
+                  }`}
+            </div>
+
+            <span
+              className="text-gray-400 text-xl shrink-0"
+              aria-hidden="true"
+            >
+              {isExpanded
+                ? "▲"
+                : "▼"}
+            </span>
+
           </div>
 
         </div>
+
+        {isExpanded && (
+          <>
+
+            {isSelected && (
+              <div className="mt-5 bg-pink-100 text-pink-700 rounded-2xl px-4 py-3 font-semibold">
+                🔔 Trajet concerné par cette notification
+              </div>
+            )}
 
         <div className="mt-6 space-y-4">
 
@@ -3633,6 +3679,10 @@ async function handleBulkCancel() {
               : "Demander à rejoindre ce trajet"}
           </button>
 
+        )}
+
+
+          </>
         )}
 
       </div>
@@ -4630,7 +4680,7 @@ async function handleBulkCancel() {
 
 </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-4">
 
               {myTrips.map(
                 (trip) =>
@@ -4658,7 +4708,7 @@ async function handleBulkCancel() {
               Mes participations
             </h2>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-4">
 
               {joinedTrips.map(
                 (trip) =>
@@ -4689,7 +4739,7 @@ async function handleBulkCancel() {
           {availableTrips.length >
           0 ? (
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-4">
 
               {availableTrips.map(
                 (trip) =>
