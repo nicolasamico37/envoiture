@@ -4,6 +4,34 @@ import { useMemo, useState } from "react";
 
 const sections = [
   {
+    id: "demarrage",
+    title: "Bien démarrer",
+    icon: "🚀",
+    questions: [
+      {
+        question: "À quoi sert EnVoiture ?",
+        answer:
+          "EnVoiture est un outil de covoiturage destiné aux agents de votre établissement. Il permet de trouver des collègues avec lesquels partager tout ou partie de vos trajets domicile-travail, de proposer des trajets et d'organiser ensuite le covoiturage directement entre vous.",
+      },
+      {
+        question: "Que dois-je renseigner pour commencer ?",
+        answer:
+          "Commencez par vérifier votre profil et renseignez les informations utiles à vos déplacements : vos horaires habituels, vos trajets, votre rôle de conducteur ou de passager et, si vous conduisez, les informations concernant votre véhicule et le nombre de places disponibles.",
+      },
+      {
+        question: "Comment fonctionne EnVoiture ?",
+        answer:
+          "EnVoiture utilise les informations liées à vos déplacements pour identifier des collègues dont les trajets peuvent être compatibles avec les vôtres. Lorsque vous trouvez une personne qui vous intéresse, vous pouvez la contacter via la messagerie afin d'organiser votre covoiturage.",
+      },
+      {
+        question: "Dois-je créer un trajet pour chaque déplacement ?",
+        answer:
+          "Vos horaires habituels peuvent vous faire gagner du temps lors de la création de vos trajets. Ils servent de référence et peuvent être adaptés pour un trajet précis. Modifier vos habitudes ne modifie pas automatiquement les trajets déjà créés.",
+      },
+    ],
+  },
+
+  {
     id: "trajets",
     title: "Mes trajets",
     icon: "🚗",
@@ -11,22 +39,70 @@ const sections = [
       {
         question: "Comment créer un trajet ?",
         answer:
-          "Allez dans « Trajets », puis choisissez l'option permettant de créer un trajet. Renseignez le jour, vos horaires et les informations demandées, puis validez. Le trajet sera ensuite visible selon les critères de compatibilité.",
+          "Allez dans « Trajets », puis choisissez l'option permettant de créer un trajet. Renseignez le jour, vos horaires et les informations demandées, puis validez. Le trajet pourra ensuite être pris en compte dans la recherche de compatibilités.",
+      },
+      {
+        question: "Puis-je créer plusieurs trajets ?",
+        answer:
+          "Oui. Vous pouvez enregistrer les différents trajets nécessaires à votre organisation, notamment lorsque vos horaires ou vos jours de déplacement sont différents.",
       },
       {
         question: "Comment modifier un trajet ?",
         answer:
-          "Dans « Trajets », retrouvez le trajet concerné puis utilisez l'action de modification. Les changements concernent uniquement ce trajet et ne modifient pas automatiquement vos horaires habituels.",
+          "Dans « Trajets », retrouvez le trajet concerné puis utilisez l'action de modification. Les changements concernent ce trajet et ne modifient pas automatiquement vos horaires habituels.",
       },
       {
         question: "Comment supprimer un trajet ?",
         answer:
-          "Dans « Trajets », sélectionnez le trajet concerné puis utilisez l'action permettant de le supprimer. Une fois supprimé, il ne sera plus proposé aux autres utilisateurs.",
+          "Dans « Trajets », sélectionnez le trajet concerné puis utilisez l'action permettant de le supprimer. Une fois supprimé, il ne sera plus pris en compte comme trajet disponible.",
       },
       {
-        question: "À quoi servent mes horaires habituels ?",
+        question: "Quelle est la différence entre mes horaires habituels et mes trajets ?",
         answer:
-          "Vos horaires habituels servent à vous faire gagner du temps lors de la création de nouveaux trajets. Ils permettent de proposer automatiquement vos horaires habituels, que vous pouvez ensuite modifier pour un trajet précis. Modifier vos habitudes ne modifie jamais les trajets déjà créés.",
+          "Les horaires habituels correspondent à vos habitudes de déplacement, jour par jour. Ils servent notamment à vous faire gagner du temps lors de la création de vos trajets. Vous pouvez les consulter et les modifier depuis la page « Mon profil ». Un trajet correspond, lui, à un déplacement réellement proposé ou recherché à une date donnée. Modifier vos horaires habituels ne modifie pas les trajets déjà créés.",
+      },
+      {
+        question: "Puis-je avoir des horaires différents selon les jours ?",
+        answer:
+          "Oui. EnVoiture permet de définir des horaires différents pour chaque journée. Vous pouvez ainsi avoir, par exemple, un horaire habituel du lundi au jeudi et un autre horaire le vendredi.",
+      },
+      {
+        question: "Je ne retrouve pas un trajet que j'avais créé.",
+        answer:
+          "Vérifiez la rubrique « Trajets » et les informations du trajet concerné. Si le problème persiste, vérifiez également que le trajet n'a pas été supprimé ou modifié.",
+      },
+    ],
+  },
+
+  {
+    id: "conducteur-passager",
+    title: "Conducteur et passager",
+    icon: "🧑‍✈️",
+    questions: [
+      {
+        question: "Puis-je être conducteur et passager ?",
+        answer:
+          "Oui. Votre utilisation d'EnVoiture peut évoluer selon vos déplacements. Vous pouvez proposer un trajet lorsque vous conduisez et rechercher ou rejoindre un trajet proposé par un collègue lorsque vous souhaitez être passager.",
+      },
+      {
+        question: "Comment proposer des places dans ma voiture ?",
+        answer:
+          "Lorsque vous proposez un trajet en tant que conducteur, indiquez le nombre de places que vous souhaitez mettre à disposition. Cette information permet aux autres utilisateurs de savoir si le trajet peut encore accueillir des passagers.",
+      },
+      {
+        question: "Comment rejoindre le trajet d'un collègue ?",
+        answer:
+          "Lorsqu'un trajet vous intéresse, utilisez l'action permettant de demander à le rejoindre. Le conducteur pourra ensuite prendre connaissance de votre demande et vous pourrez organiser les détails du covoiturage.",
+      },
+      {
+        question: "Que se passe-t-il lorsqu'un trajet n'a plus de place ?",
+        answer:
+          "Un trajet ne doit pas être considéré comme disponible lorsque toutes les places proposées sont déjà occupées. Vérifiez les informations affichées sur le trajet avant d'effectuer une demande.",
+      },
+      {
+        question: "Puis-je annuler ma participation à un trajet ?",
+        answer:
+          "Oui. Si votre organisation change, utilisez l'action disponible sur le trajet concerné pour annuler votre participation. Les personnes concernées peuvent alors être informées de cette modification.",
       },
     ],
   },
@@ -44,38 +120,88 @@ const sections = [
       {
         question: "Comment renseigner mes horaires habituels ?",
         answer:
-          "Dans « Mon profil », rendez-vous dans la rubrique « Horaires de déplacement ». Vous pouvez définir vos habitudes pour chaque jour de la semaine. Chaque journée peut avoir ses propres horaires.",
+          "Dans « Mon profil », rendez-vous dans la rubrique consacrée à vos horaires de déplacement. Vous pouvez définir vos habitudes pour chaque jour de la semaine. Chaque journée peut avoir ses propres horaires.",
       },
       {
-        question:
-          "Comment indiquer le nombre de places disponibles dans ma voiture ?",
+        question: "Pourquoi mes horaires habituels sont-ils importants ?",
         answer:
-          "Le nombre de places disponibles fait partie des informations de votre profil conducteur. Il permet aux autres utilisateurs de savoir combien de personnes peuvent être accueillies dans votre véhicule.",
+          "Ils permettent à EnVoiture de mieux comprendre vos habitudes de déplacement et de vous faire gagner du temps lors de la création de trajets. Des horaires correctement renseignés améliorent également la pertinence des recherches de compatibilité.",
+      },
+      {
+        question: "Comment indiquer le nombre de places disponibles dans ma voiture ?",
+        answer:
+          "Le nombre de places disponibles fait partie des informations utilisées lorsque vous proposez un trajet en tant que conducteur. Il permet aux autres utilisateurs de savoir combien de passagers peuvent être accueillis.",
       },
     ],
   },
 
   {
-    id: "profils",
+    id: "vehicules",
+    title: "Mes véhicules",
+    icon: "🚙",
+    questions: [
+      {
+        question: "Pourquoi renseigner mon véhicule ?",
+        answer:
+          "Les informations concernant votre véhicule permettent de préparer vos trajets lorsque vous conduisez et d'indiquer aux autres utilisateurs les possibilités d'accueil de votre véhicule.",
+      },
+      {
+        question: "Puis-je enregistrer plusieurs véhicules ?",
+        answer:
+          "EnVoiture permet de gérer les véhicules associés à votre profil lorsque cette fonctionnalité est disponible dans votre espace. Vous pouvez ainsi utiliser le véhicule correspondant au déplacement concerné.",
+      },
+      {
+        question: "À quoi sert le véhicule par défaut ?",
+        answer:
+          "Le véhicule par défaut est celui qui peut être proposé automatiquement lorsque vous préparez un nouveau trajet. Vous pouvez ensuite sélectionner un autre véhicule si nécessaire.",
+      },
+      {
+        question: "Comment indiquer le nombre de places disponibles ?",
+        answer:
+          "Le nombre de places proposées doit correspondre au nombre de passagers que vous acceptez d'accueillir dans le cadre du trajet. Cette information est importante pour éviter de proposer davantage de places que votre véhicule ne peut en accueillir.",
+      },
+    ],
+  },
+
+  {
+    id: "compatibilite",
     title: "Trouver un collègue",
     icon: "👥",
     questions: [
       {
-        question:
-          "Comment trouver des collègues compatibles ?",
+        question: "Comment trouver des collègues compatibles ?",
         answer:
           "Ouvrez « Profils ». EnVoiture compare les informations utiles aux déplacements afin de mettre en évidence les collègues susceptibles de correspondre à vos besoins de covoiturage.",
       },
       {
         question: "Comment fonctionne la compatibilité ?",
         answer:
-          "La compatibilité prend notamment en compte les établissements, les jours, les horaires et les informations liées aux trajets. Plus les conditions de déplacement sont proches, plus la compatibilité est pertinente.",
+          "La compatibilité repose sur plusieurs éléments liés aux déplacements, notamment les établissements, les jours, les horaires et les informations disponibles sur les trajets. Les conditions les plus proches permettent d'obtenir les correspondances les plus pertinentes.",
       },
       {
-        question:
-          "Quelles informations sont visibles par les autres utilisateurs ?",
+        question: "Que signifie le pourcentage de compatibilité ?",
         answer:
-          "EnVoiture est conçu pour limiter les informations personnelles exposées. Les adresses personnelles complètes ne sont pas affichées publiquement. Les informations nécessaires à la recherche de compatibilités sont présentées afin de permettre aux collègues de prendre contact.",
+          "Le pourcentage donne une indication synthétique du niveau de correspondance entre vos déplacements et ceux d'un autre utilisateur. Il ne constitue pas une garantie qu'un covoiturage sera possible : il vous appartient ensuite de prendre contact avec le collègue pour vérifier que l'organisation vous convient.",
+      },
+      {
+        question: "Pourquoi un collègue n'apparaît-il pas dans mes résultats ?",
+        answer:
+          "Les résultats dépendent des informations disponibles et de leur compatibilité avec vos propres déplacements. Si les jours, les horaires ou les autres critères nécessaires sont trop éloignés, un collègue peut ne pas apparaître comme une correspondance pertinente.",
+      },
+      {
+        question: "Puis-je voir les trajets d'un collègue ?",
+        answer:
+          "Lorsqu'un profil est compatible, les informations utiles peuvent permettre de consulter les trajets correspondants afin de mieux comprendre les possibilités de covoiturage.",
+      },
+      {
+        question: "Comment contacter un collègue trouvé dans les profils ?",
+        answer:
+          "Lorsqu'un profil ou un trajet vous intéresse, utilisez la fonction de contact proposée par EnVoiture. Vous pourrez alors échanger directement avec le collègue concerné pour organiser votre covoiturage.",
+      },
+      {
+        question: "Je ne trouve aucun collègue compatible. Que faire ?",
+        answer:
+          "Commencez par vérifier que votre profil, vos jours de déplacement et vos horaires habituels sont correctement renseignés. Une recherche peut également ne donner aucun résultat si aucun collègue ne présente actuellement un déplacement suffisamment proche du vôtre.",
       },
     ],
   },
@@ -95,6 +221,16 @@ const sections = [
         answer:
           "Ouvrez « Messages » dans le menu. Vous y retrouverez vos échanges avec les autres utilisateurs.",
       },
+      {
+        question: "À quoi sert la messagerie ?",
+        answer:
+          "La messagerie est destinée à faciliter la prise de contact entre collègues. Elle permet de discuter de l'organisation pratique du covoiturage sans avoir à publier vos coordonnées personnelles.",
+      },
+      {
+        question: "Que dois-je faire après avoir trouvé un collègue compatible ?",
+        answer:
+          "Prenez contact avec lui via la messagerie. Vous pourrez ensuite vous mettre d'accord directement sur les détails pratiques : point de rendez-vous, horaires, organisation du trajet et autres informations utiles.",
+      },
     ],
   },
 
@@ -106,7 +242,22 @@ const sections = [
       {
         question: "À quoi servent les notifications ?",
         answer:
-          "Les notifications vous informent notamment lorsqu'une information importante concerne votre activité sur EnVoiture, par exemple un nouveau contact ou une correspondance potentielle.",
+          "Les notifications vous informent lorsqu'une action ou une information importante concerne votre activité sur EnVoiture, par exemple un nouveau message, une demande concernant un trajet ou une correspondance.",
+      },
+      {
+        question: "Où retrouver mes notifications ?",
+        answer:
+          "Vos notifications sont accessibles depuis l'interface EnVoiture grâce à l'icône de notification. Les notifications peuvent également vous orienter directement vers l'élément concerné, comme une conversation ou un trajet.",
+      },
+      {
+        question: "Puis-je supprimer une notification ?",
+        answer:
+          "Oui. Une notification lue peut être supprimée afin de garder une liste de notifications claire et utile.",
+      },
+      {
+        question: "Je ne retrouve pas une notification que j'attendais.",
+        answer:
+          "Vérifiez la rubrique « Notifications » depuis l'icône de notification. Si vous ne retrouvez pas l'information recherchée, contactez votre référent EnVoiture.",
       },
     ],
   },
@@ -117,30 +268,76 @@ const sections = [
     icon: "📊",
     questions: [
       {
-        question:
-          "Comment sont calculées mes économies ?",
+        question: "Que présentent mes statistiques ?",
+        answer:
+          "La rubrique « Statistiques » permet de visualiser les résultats de votre activité de covoiturage, notamment les kilomètres mutualisés ainsi que les estimations d'économies et de CO₂ évité.",
+      },
+      {
+        question: "Comment sont calculées mes économies ?",
         answer:
           "Les économies affichées sont une estimation basée sur les kilomètres mutualisés grâce au covoiturage. EnVoiture utilise actuellement une valeur de référence de 0,15 € par kilomètre. Il s'agit d'une estimation et non du coût réel de votre véhicule.",
       },
       {
-        question:
-          "Comment est calculé le CO₂ évité ?",
+        question: "Comment est calculé le CO₂ évité ?",
         answer:
           "Le CO₂ évité est estimé à partir des kilomètres mutualisés. EnVoiture utilise actuellement un facteur de référence de 120 g de CO₂ par kilomètre. Il s'agit d'une estimation conventionnelle et non d'une mesure exacte des émissions de chaque véhicule.",
       },
+      {
+        question: "Pourquoi mes statistiques sont-elles des estimations ?",
+        answer:
+          "Les statistiques servent à donner un ordre de grandeur de l'impact du covoiturage. Elles ne constituent pas une mesure exacte des coûts réellement supportés par votre véhicule ni des émissions réellement produites.",
+      },
     ],
   },
+
+  {
+    id: "confidentialite",
+    title: "Confidentialité",
+    icon: "🔒",
+    questions: [
+      {
+        question: "Quelles informations sont visibles par les autres utilisateurs ?",
+        answer:
+          "EnVoiture est conçu pour limiter les informations personnelles exposées. Les informations nécessaires à la recherche de compatibilités et à l'organisation du covoiturage peuvent être présentées aux autres utilisateurs, mais les informations personnelles qui ne sont pas nécessaires n'ont pas vocation à être affichées publiquement.",
+      },
+      {
+        question: "Mon adresse personnelle complète est-elle visible ?",
+        answer:
+          "Non. EnVoiture n'a pas vocation à afficher publiquement votre adresse personnelle complète. Les informations liées à votre localisation sont utilisées pour rechercher des compatibilités tout en limitant l'exposition de vos données personnelles.",
+      },
+      {
+        question: "Quand dois-je communiquer mon adresse exacte ?",
+        answer:
+          "L'adresse exacte peut être échangée directement avec votre collègue lorsque vous avez décidé d'organiser un covoiturage. Il est préférable de ne pas publier ce type d'information dans votre profil ou dans un message destiné à plusieurs personnes.",
+      },
+      {
+        question: "Pourquoi certaines informations sont-elles utilisées pour le matching ?",
+        answer:
+          "Certaines informations sont nécessaires pour déterminer si deux déplacements peuvent être compatibles. Elles permettent notamment de comparer les jours, les horaires et la proximité des trajets sans avoir besoin d'exposer publiquement toutes vos informations personnelles.",
+      },
+    ],
+  },
+
+  {
+    id: "depannage",
+    title: "Un problème ?",
+    icon: "🛠️",
+    questions: [
+      {
+        question: "Je rencontre un problème que cette aide ne résout pas.",
+        answer:
+          "Si vous ne trouvez pas la réponse à votre question dans cette rubrique, contactez votre référent EnVoiture. Pensez à lui indiquer le problème rencontré, la page concernée et, si possible, le message d'erreur affiché.",
+      },
+    ],
+  }
 ];
 
 export default function HelpPage() {
   const [search, setSearch] = useState("");
-  const [openQuestion, setOpenQuestion] =
-    useState(null);
-  const [selectedSection, setSelectedSection] =
-    useState(null);
+  const [openQuestion, setOpenQuestion] = useState(null);
+  const [selectedSection, setSelectedSection] = useState(null);
 
-  const normalizedSearch =
-    search.trim().toLowerCase();
+  const normalizedSearch = search.trim().toLowerCase();
 
   const filteredSections = useMemo(() => {
     if (!normalizedSearch) {
@@ -152,60 +349,61 @@ export default function HelpPage() {
         ...section,
         questions: section.questions.filter(
           (item) =>
-            item.question
-              .toLowerCase()
-              .includes(normalizedSearch) ||
-            item.answer
-              .toLowerCase()
-              .includes(normalizedSearch) ||
-            section.title
-              .toLowerCase()
-              .includes(normalizedSearch)
+            item.question.toLowerCase().includes(normalizedSearch) ||
+            item.answer.toLowerCase().includes(normalizedSearch) ||
+            section.title.toLowerCase().includes(normalizedSearch)
         ),
       }))
-      .filter(
-        (section) =>
-          section.questions.length > 0
-      );
+      .filter((section) => section.questions.length > 0);
   }, [normalizedSearch]);
 
   const displayedSections = selectedSection
     ? filteredSections.filter(
-        (section) =>
-          section.id === selectedSection
+        (section) => section.id === selectedSection
       )
     : filteredSections;
 
-  function toggleQuestion(
-    sectionId,
-    questionIndex
-  ) {
+  const resultCount = displayedSections.reduce(
+    (total, section) => total + section.questions.length,
+    0
+  );
+
+  function toggleQuestion(sectionId, questionIndex) {
     const id = `${sectionId}-${questionIndex}`;
 
-    setOpenQuestion((current) =>
-      current === id ? null : id
-    );
+    setOpenQuestion((current) => (current === id ? null : id));
+  }
+
+  function selectSection(sectionId) {
+    setSelectedSection(sectionId);
+    setOpenQuestion(null);
+  }
+
+  function resetNavigation() {
+    setSelectedSection(null);
+    setOpenQuestion(null);
+  }
+
+  function clearSearch() {
+    setSearch("");
+    setSelectedSection(null);
+    setOpenQuestion(null);
   }
 
   return (
     <div className="flex-1 min-h-screen bg-gray-50 p-4 lg:p-8">
       <div className="max-w-5xl mx-auto">
-
         <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
-
           <div className="bg-gradient-to-r from-pink-600 to-red-500 px-6 py-10 lg:px-10 lg:py-12 text-white">
-            <div className="text-5xl mb-5">
-              ❓
-            </div>
+            <div className="text-5xl mb-5">❓</div>
 
             <h1 className="text-3xl lg:text-4xl font-black">
               Aide EnVoiture
             </h1>
 
             <p className="mt-3 text-base lg:text-lg text-white/90 max-w-2xl">
-              Retrouvez rapidement les réponses aux
-              questions les plus fréquentes concernant
-              l'utilisation d'EnVoiture.
+              Retrouvez rapidement les réponses aux questions les plus
+              fréquentes et découvrez comment utiliser EnVoiture.
             </p>
 
             <div className="mt-7 relative max-w-2xl">
@@ -217,13 +415,12 @@ export default function HelpPage() {
                 type="search"
                 value={search}
                 onChange={(event) => {
-                  setSearch(
-                    event.target.value
-                  );
+                  setSearch(event.target.value);
                   setSelectedSection(null);
                   setOpenQuestion(null);
                 }}
                 placeholder="Rechercher dans l'aide..."
+                aria-label="Rechercher dans l'aide"
                 className="w-full bg-white text-gray-900 placeholder:text-gray-500 border border-white/30 rounded-2xl px-12 py-4 outline-none focus:ring-4 focus:ring-white/30"
               />
             </div>
@@ -231,112 +428,76 @@ export default function HelpPage() {
 
           {!search && !selectedSection && (
             <div className="p-6 lg:p-10">
-
               <h2 className="text-2xl font-black text-gray-900 mb-6">
                 Comment pouvons-nous vous aider ?
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sections.map(
-                  (section) => (
-                    <button
-                      key={section.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedSection(
-                          section.id
-                        );
-                        setOpenQuestion(null);
-                      }}
-                      className="text-left bg-gray-50 border border-gray-200 rounded-2xl p-5 hover:bg-gray-100 hover:border-gray-300 transition"
-                    >
-                      <div className="text-3xl mb-3">
-                        {section.icon}
-                      </div>
+                {sections.map((section) => (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => selectSection(section.id)}
+                    className="text-left bg-gray-50 border border-gray-200 rounded-2xl p-5 hover:bg-gray-100 hover:border-gray-300 transition"
+                  >
+                    <div className="text-3xl mb-3">{section.icon}</div>
 
-                      <div className="font-bold text-gray-900">
-                        {section.title}
-                      </div>
+                    <div className="font-bold text-gray-900">
+                      {section.title}
+                    </div>
 
-                      <div className="text-sm text-gray-500 mt-1">
-                        {
-                          section.questions
-                            .length
-                        }{" "}
-                        question
-                        {section.questions
-                          .length > 1
-                          ? "s"
-                          : ""}
-                      </div>
-                    </button>
-                  )
-                )}
+                    <div className="text-sm text-gray-500 mt-1">
+                      {section.questions.length} question
+                      {section.questions.length > 1 ? "s" : ""}
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
-          {(search ||
-            selectedSection) && (
+          {(search || selectedSection) && (
             <div className="p-6 lg:p-10">
-
-              {selectedSection &&
-                !search && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSelectedSection(
-                        null
-                      )
-                    }
-                    className="mb-6 text-sm font-semibold text-pink-700 hover:text-pink-800"
-                  >
-                    ← Retour aux rubriques
-                  </button>
-                )}
+              {selectedSection && !search && (
+                <button
+                  type="button"
+                  onClick={resetNavigation}
+                  className="mb-6 text-sm font-semibold text-pink-700 hover:text-pink-800"
+                >
+                  ← Retour aux rubriques
+                </button>
+              )}
 
               {search && (
                 <div className="mb-7">
-                  <h2 className="text-2xl font-black text-gray-900">
-                    Résultats de recherche
-                  </h2>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-black text-gray-900">
+                        Résultats de recherche
+                      </h2>
 
-                  <p className="text-gray-500 mt-1">
-                    {displayedSections.reduce(
-                      (
-                        total,
-                        section
-                      ) =>
-                        total +
-                        section
-                          .questions
-                          .length,
-                      0
-                    )}{" "}
-                    résultat
-                    {displayedSections.reduce(
-                      (
-                        total,
-                        section
-                      ) =>
-                        total +
-                        section
-                          .questions
-                          .length,
-                      0
-                    ) > 1
-                      ? "s"
-                      : ""}
-                  </p>
+                      <p className="text-gray-500 mt-1">
+                        {resultCount} résultat
+                        {resultCount > 1 ? "s" : ""}
+                      </p>
+                    </div>
+
+                    {search && (
+                      <button
+                        type="button"
+                        onClick={clearSearch}
+                        className="shrink-0 text-sm font-semibold text-pink-700 hover:text-pink-800"
+                      >
+                        Effacer
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {displayedSections.length ===
-                0 && (
+              {displayedSections.length === 0 && (
                 <div className="text-center py-12">
-                  <div className="text-5xl mb-4">
-                    🔎
-                  </div>
+                  <div className="text-5xl mb-4">🔎</div>
 
                   <h2 className="text-xl font-bold text-gray-900">
                     Aucun résultat
@@ -345,87 +506,71 @@ export default function HelpPage() {
                   <p className="text-gray-500 mt-2">
                     Essayez avec d'autres mots-clés.
                   </p>
+
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="mt-5 inline-flex items-center justify-center rounded-xl bg-pink-600 px-5 py-3 text-sm font-semibold text-white hover:bg-pink-700 transition"
+                  >
+                    Afficher toutes les rubriques
+                  </button>
                 </div>
               )}
 
               <div className="space-y-8">
-                {displayedSections.map(
-                  (section) => (
-                    <section
-                      key={section.id}
-                    >
-                      {search && (
-                        <div className="flex items-center gap-3 mb-4">
-                          <span className="text-2xl">
-                            {
-                              section.icon
-                            }
-                          </span>
+                {displayedSections.map((section) => (
+                  <section key={section.id}>
+                    {search && (
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className="text-2xl">{section.icon}</span>
 
-                          <h3 className="text-xl font-black text-gray-900">
-                            {
-                              section.title
-                            }
-                          </h3>
-                        </div>
-                      )}
-
-                      <div className="space-y-3">
-                        {section.questions.map(
-                          (
-                            item,
-                            index
-                          ) => {
-                            const questionId = `${section.id}-${index}`;
-                            const isOpen =
-                              openQuestion ===
-                              questionId;
-
-                            return (
-                              <div
-                                key={
-                                  questionId
-                                }
-                                className="border border-gray-200 rounded-2xl overflow-hidden bg-white"
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    toggleQuestion(
-                                      section.id,
-                                      index
-                                    )
-                                  }
-                                  className="w-full flex items-center justify-between gap-4 text-left px-5 py-5 hover:bg-gray-50 transition"
-                                >
-                                  <span className="font-semibold text-gray-900">
-                                    {
-                                      item.question
-                                    }
-                                  </span>
-
-                                  <span className="text-xl text-gray-500 shrink-0">
-                                    {isOpen
-                                      ? "−"
-                                      : "+"}
-                                  </span>
-                                </button>
-
-                                {isOpen && (
-                                  <div className="px-5 pb-5 text-gray-600 leading-relaxed border-t border-gray-100 pt-4">
-                                    {
-                                      item.answer
-                                    }
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
-                        )}
+                        <h3 className="text-xl font-black text-gray-900">
+                          {section.title}
+                        </h3>
                       </div>
-                    </section>
-                  )
-                )}
+                    )}
+
+                    <div className="space-y-3">
+                      {section.questions.map((item, index) => {
+                        const questionId = `${section.id}-${index}`;
+                        const isOpen = openQuestion === questionId;
+
+                        return (
+                          <div
+                            key={questionId}
+                            className="border border-gray-200 rounded-2xl overflow-hidden bg-white"
+                          >
+                            <button
+                              type="button"
+                              onClick={() =>
+                                toggleQuestion(section.id, index)
+                              }
+                              aria-expanded={isOpen}
+                              className="w-full flex items-center justify-between gap-4 text-left px-5 py-5 hover:bg-gray-50 transition"
+                            >
+                              <span className="font-semibold text-gray-900">
+                                {item.question}
+                              </span>
+
+                              <span
+                                aria-hidden="true"
+                                className="text-xl text-gray-500 shrink-0"
+                              >
+                                {isOpen ? "−" : "+"}
+                              </span>
+                            </button>
+
+                            {isOpen && (
+                              <div className="px-5 pb-5 text-gray-600 leading-relaxed border-t border-gray-100 pt-4">
+                                {item.answer}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
               </div>
             </div>
           )}
@@ -436,11 +581,10 @@ export default function HelpPage() {
             </h2>
 
             <p className="text-gray-600 mt-2 leading-relaxed">
-              Contactez votre référent EnVoiture pour
-              obtenir de l'aide.
+              Consultez les différentes rubriques de cette aide ou contactez
+              votre référent EnVoiture si vous rencontrez un problème.
             </p>
           </div>
-
         </div>
       </div>
     </div>
