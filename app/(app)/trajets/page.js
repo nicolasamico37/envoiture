@@ -286,9 +286,29 @@ export default function TripsPage() {
   ] = useState(null);
 
   const [
-  showScrollButtons,
-  setShowScrollButtons,
-] = useState(false);
+    selectedTripIds,
+    setSelectedTripIds,
+  ] = useState([]);
+
+  const [
+    showBulkCancelModal,
+    setShowBulkCancelModal,
+  ] = useState(false);
+
+  const [
+    bulkCancelSummary,
+    setBulkCancelSummary,
+  ] = useState(null);
+
+  const [
+    bulkCancelling,
+    setBulkCancelling,
+  ] = useState(false);
+  
+  const [
+    showScrollButtons,
+    setShowScrollButtons,
+  ] = useState(false);
 
   const [
     selectedDay,
@@ -2580,6 +2600,373 @@ const todayString =
    * --------------------------------------------------
    */
 
+  function toggleTripSelection(tripId) {
+  setSelectedTripIds((current) =>
+    current.includes(tripId)
+      ? current.filter(
+          (id) => id !== tripId
+        )
+      : [...current, tripId]
+  );
+}
+
+function getSelectableMyTrips() {
+  return myTrips.filter(
+    (trip) =>
+      trip.conducteur_id === profile.id &&
+      trip.date_trajet &&
+      trip.date_trajet >= todayString &&
+      trip.statut !== "annule"
+  );
+}
+
+function toggleSelectAllMyTrips() {
+  const selectableTrips =
+    getSelectableMyTrips();
+
+  const selectableIds =
+    selectableTrips.map(
+      (trip) => trip.id
+    );
+
+  const allSelected =
+    selectableIds.length > 0 &&
+    selectableIds.every((id) =>
+      selectedTripIds.includes(id)
+    );
+
+  setSelectedTripIds(
+    allSelected
+      ? []
+      : selectableIds
+  );
+}
+
+async function requestBulkCancel() {
+  if (
+    selectedTripIds.length === 0
+  ) {
+    return;
+  }
+
+  setMessage("");
+
+  try {
+    const {
+      data: participations,
+      error,
+    } = await supabase
+      .from("participations")
+      .select(`
+        id,
+        trajet_id,
+        utilisateur_id,
+        statut
+      `)
+      .in(
+        "trajet_id",
+        selectedTripIds
+      )
+      .in(
+        "statut",
+        [
+          "acceptee",
+          "en_attente",
+        ]
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    const affectedTripIds =
+      new Set(
+        (participations || []).map(
+          (item) =>
+            item.trajet_id
+        )
+      );
+
+    setBulkCancelSummary({
+      tripCount:
+        selectedTripIds.length,
+
+      affectedTripCount:
+        affectedTripIds.size,
+
+      participantCount:
+        participations?.length || 0,
+    });
+
+    setShowBulkCancelModal(true);
+  } catch (error) {
+    console.error(
+      "Erreur préparation annulation groupée :",
+      error
+    );
+
+    setMessage(
+      `Erreur : ${
+        error?.message ||
+        "Impossible de préparer l'annulation."
+      }`
+    );
+  }
+}
+
+async function handleBulkCancel() {
+  if (
+    selectedTripIds.length === 0
+  ) {
+    return;
+  }
+
+  setBulkCancelling(true);
+  setMessage("");
+
+  try {
+    const now =
+      new Date().toISOString();
+
+    /*
+     * Récupération des participations
+     * encore concernées.
+     */
+    const {
+      data: participations,
+      error: participationFetchError,
+    } = await supabase
+      .from("participations")
+      .select(`
+        id,
+        trajet_id,
+        utilisateur_id,
+        statut
+      `)
+      .in(
+        "trajet_id",
+        selectedTripIds
+      )
+      .in(
+        "statut",
+        [
+          "acceptee",
+          "en_attente",
+        ]
+      );
+
+    if (
+      participationFetchError
+    ) {
+      throw participationFetchError;
+    }
+
+    /*
+     * Annulation des trajets.
+     */
+    const {
+      error: tripError,
+    } = await supabase
+      .from("trajets")
+      .update({
+        statut: "annule",
+        updated_at: now,
+        archived_at: now,
+      })
+      .in(
+        "id",
+        selectedTripIds
+      )
+      .eq(
+        "conducteur_id",
+        profile.id
+      );
+
+    if (tripError) {
+      throw tripError;
+    }
+
+    /*
+     * Annulation des participations.
+     */
+    if (
+      participations &&
+      participations.length > 0
+    ) {
+      const {
+        error:
+          participationUpdateError,
+      } = await supabase
+        .from("participations")
+        .update({
+          statut: "annulee",
+          updated_at: now,
+        })
+        .in(
+          "trajet_id",
+          selectedTripIds
+        )
+        .in(
+          "statut",
+          [
+            "acceptee",
+            "en_attente",
+          ]
+        );
+
+      if (
+        participationUpdateError
+      ) {
+        throw participationUpdateError;
+      }
+
+      /*
+       * Notification des passagers.
+       */
+      const notifications =
+        participations.map(
+          (participation) => {
+            const trip =
+              trips.find(
+                (item) =>
+                  item.id ===
+                  participation.trajet_id
+              );
+
+            return {
+              utilisateur_id:
+                participation.utilisateur_id,
+
+              type:
+                "trajet_annule",
+
+              titre:
+                "Trajet annulé",
+
+              message:
+                participation.statut ===
+                "acceptee"
+                  ? `Le trajet du ${
+                      trip
+                        ? formatDate(
+                            trip.date_trajet
+                          )
+                        : "prévu"
+                    } a été annulé par le conducteur.`
+                  : `La demande de participation au trajet du ${
+                      trip
+                        ? formatDate(
+                            trip.date_trajet
+                          )
+                        : "prévu"
+                    } a été annulée car le trajet n'est plus disponible.`,
+
+              lu: false,
+
+              trajet_id:
+                participation.trajet_id,
+
+              participation_id:
+                participation.id,
+            };
+          }
+        );
+
+      const {
+        error: notificationError,
+      } = await supabase
+        .from("notifications")
+        .insert(
+          notifications
+        );
+
+      if (notificationError) {
+        throw notificationError;
+      }
+    }
+
+    /*
+     * Mise à jour de l'interface.
+     */
+    setTrips(
+      (current) =>
+        current.filter(
+          (trip) =>
+            !selectedTripIds.includes(
+              trip.id
+            )
+        )
+    );
+
+    setMyParticipations(
+      (current) =>
+        current.filter(
+          (participation) =>
+            !selectedTripIds.includes(
+              participation.trajet_id
+            )
+        )
+    );
+
+    setDriverParticipations(
+      (current) =>
+        current.map(
+          (participation) =>
+            selectedTripIds.includes(
+              participation.trajet_id
+            )
+              ? {
+                  ...participation,
+                  statut:
+                    "annulee",
+                }
+              : participation
+        )
+    );
+
+    const count =
+      selectedTripIds.length;
+
+    setSelectedTripIds([]);
+    setBulkCancelSummary(null);
+    setShowBulkCancelModal(false);
+
+    setMessage(
+      `${count} trajet${
+        count > 1
+          ? "s"
+          : ""
+      } annulé${
+        count > 1
+          ? "s"
+          : ""
+      } avec succès${
+        participations?.length
+          ? " et les passagers concernés ont été informés"
+          : ""
+      } ✅`
+    );
+
+    setTimeout(() => {
+      setMessage("");
+    }, 3000);
+  } catch (error) {
+    console.error(
+      "Erreur annulation groupée :",
+      error
+    );
+
+    setMessage(
+      `Erreur : ${
+        error?.message ||
+        "Impossible d'annuler les trajets."
+      }`
+    );
+  } finally {
+    setBulkCancelling(false);
+  }
+}
+  
   function requestCancelTrip(trip) {
     if (
       !trip?.date_trajet ||
@@ -2801,6 +3188,18 @@ const todayString =
       trip.conducteur_id ===
       profile.id;
 
+    const canSelect =
+      isMine &&
+      trip.date_trajet &&
+      trip.date_trajet >=
+        todayString &&
+      trip.statut !== "annule";
+
+    const isBulkSelected =
+      selectedTripIds.includes(
+        trip.id
+      );
+      
     const participation =
       getParticipationForTrip(
         trip.id
@@ -2859,7 +3258,28 @@ const todayString =
         }`}
       >
 
-        {isSelected && (
+        {canSelect && (
+          <div className="mb-5 flex items-center">
+            <label className="flex items-center gap-3 cursor-pointer text-sm font-medium text-gray-700">
+              <input
+                type="checkbox"
+                checked={isBulkSelected}
+                onChange={() =>
+                  toggleTripSelection(
+                     trip.id
+                  )
+              }
+              className="w-5 h-5 accent-pink-600"
+            />
+
+            <span>
+              Sélectionner ce trajet
+            </span>
+          </label>
+        </div>
+      )}
+
+      {isSelected && (
           <div className="mb-5 bg-pink-100 text-pink-700 rounded-2xl px-4 py-3 font-semibold">
             🔔 Trajet concerné par cette notification
           </div>
@@ -4167,6 +4587,49 @@ const todayString =
               Mes trajets proposés
             </h2>
 
+            <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+  <label className="flex items-center gap-3 text-sm font-medium text-gray-700 cursor-pointer">
+    <input
+      type="checkbox"
+      checked={
+        getSelectableMyTrips().length > 0 &&
+        getSelectableMyTrips().every(
+          (trip) =>
+            selectedTripIds.includes(
+              trip.id
+            )
+        )
+      }
+      onChange={
+        toggleSelectAllMyTrips
+      }
+      className="w-5 h-5 accent-pink-600"
+    />
+
+    <span>
+      Tout sélectionner
+    </span>
+  </label>
+
+  {selectedTripIds.length > 0 && (
+    <button
+      type="button"
+      onClick={
+        requestBulkCancel
+      }
+      className="bg-red-100 text-red-700 px-5 py-3 rounded-2xl font-semibold hover:bg-red-200 transition"
+    >
+      🗑️ Annuler{" "}
+      {selectedTripIds.length} trajet
+      {selectedTripIds.length > 1
+        ? "s"
+        : ""}
+    </button>
+  )}
+
+</div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
               {myTrips.map(
@@ -4261,6 +4724,94 @@ const todayString =
       {/* ------------------------------------------
           MODALE ANNULATION
           ------------------------------------------ */}
+
+      {showBulkCancelModal &&
+  bulkCancelSummary && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+
+      <div className="w-full max-w-md bg-white rounded-3xl p-6 lg:p-8 shadow-xl">
+
+        <h2 className="text-xl font-bold text-gray-900">
+          Annuler plusieurs trajets ?
+        </h2>
+
+        <p className="text-gray-600 mt-4 leading-relaxed">
+          Vous êtes sur le point d'annuler{" "}
+          <span className="font-semibold">
+            {bulkCancelSummary.tripCount}
+          </span>{" "}
+          trajet
+          {bulkCancelSummary.tripCount > 1
+            ? "s"
+            : ""}.
+        </p>
+
+        {bulkCancelSummary.participantCount >
+          0 && (
+          <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-sm text-yellow-800">
+            ⚠️{" "}
+            {bulkCancelSummary.participantCount}{" "}
+            participation
+            {bulkCancelSummary.participantCount >
+            1
+              ? "s"
+              : ""}{" "}
+            sont concernée
+            {bulkCancelSummary.participantCount >
+            1
+              ? "s"
+              : ""}.
+            <br />
+            Les passagers concernés seront
+            automatiquement informés.
+          </div>
+        )}
+
+        {bulkCancelSummary.participantCount ===
+          0 && (
+          <p className="text-sm text-gray-500 mt-3">
+            Aucun passager n'est associé à ces
+            trajets.
+          </p>
+        )}
+
+        <div className="flex flex-col-reverse sm:flex-row gap-3 mt-6">
+
+          <button
+            type="button"
+            disabled={bulkCancelling}
+            onClick={() => {
+              setShowBulkCancelModal(
+                false
+              );
+              setBulkCancelSummary(
+                null
+              );
+            }}
+            className="flex-1 bg-gray-100 text-gray-700 px-5 py-3 rounded-2xl font-semibold disabled:opacity-50"
+          >
+            Retour
+          </button>
+
+          <button
+            type="button"
+            disabled={bulkCancelling}
+            onClick={
+              handleBulkCancel
+            }
+            className="flex-1 bg-red-600 text-white px-5 py-3 rounded-2xl font-semibold disabled:opacity-50"
+          >
+            {bulkCancelling
+              ? "Annulation..."
+              : "Confirmer l'annulation"}
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+  )}    
 
       {tripToCancel && (
 
