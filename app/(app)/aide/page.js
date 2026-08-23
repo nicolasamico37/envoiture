@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useMemo, useState } from "react";
 
 const sections = [
@@ -337,6 +339,7 @@ export default function HelpPage() {
   const [openQuestion, setOpenQuestion] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
 
+
   const normalizedSearch = search.trim().toLowerCase();
 
   const filteredSections = useMemo(() => {
@@ -453,6 +456,17 @@ export default function HelpPage() {
                   </button>
                 ))}
               </div>
+
+              <Link
+                href="/signalements"
+                className="block w-full sm:w-auto min-w-[260px] text-left bg-white border-2 border-red-300 rounded-2xl p-5 hover:bg-red-50 hover:border-red-400 transition"
+              >
+                <div className="text-3xl mb-3">🚨</div>
+                <div className="font-bold text-red-600">Signalements</div>
+                <div className="text-sm text-gray-500 mt-1">
+                  Signaler un problème ou un comportement inapproprié
+                </div>
+              </Link>
             </div>
           )}
 
