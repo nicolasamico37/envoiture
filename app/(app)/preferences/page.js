@@ -159,15 +159,21 @@ export default function PreferencesPage() {
           <section>
             <h2 className="text-xl font-bold text-gray-900">Participation au covoiturage</h2>
             <p className="text-sm text-gray-500 mt-1">Indiquez comment vous souhaitez participer au covoiturage.</p>
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 flex flex-wrap gap-3">
               {[
                 ["peut_conduire", "Conducteur"],
                 ["peut_etre_passager", "Passager"],
               ].map(([field, label]) => (
-                <label key={field} className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" checked={preferences[field]}
+                <label
+                  key={field}
+                  className="inline-flex items-center gap-3 cursor-pointer border border-gray-200 rounded-xl px-4 py-3 bg-white hover:border-pink-300 transition"
+                >
+                  <input
+                    type="checkbox"
+                    checked={preferences[field]}
                     onChange={e => setPreferences(x => ({ ...x, [field]: e.target.checked }))}
-                    className="h-5 w-5" />
+                    className="h-5 w-5"
+                  />
                   <span className="text-gray-800 font-medium">{label}</span>
                 </label>
               ))}
