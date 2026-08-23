@@ -177,30 +177,58 @@ export default function PreferencesPage() {
           <section>
             <h2 className="text-xl font-bold text-gray-900">Habitudes de déplacement</h2>
             <p className="text-sm text-gray-500 mt-1">Définissez vos habitudes pour chaque jour. Les horaires peuvent être différents d'un jour à l'autre.</p>
-            <div className="mt-4 space-y-2">
-              {habits.map(h => (
-                <div key={h.jour} className={`border rounded-2xl px-4 py-2 ${h.actif ? "border-pink-200 bg-pink-50/30" : "border-gray-200 bg-white"}`}>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" checked={h.actif} onChange={e => toggleDay(h.jour, e.target.checked)} className="h-5 w-5" />
-                    <span className="font-semibold text-gray-900">{DAYS.find(d => d[0] === h.jour)?.[1]}</span>
-                  </label>
-                  {h.actif && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
-                      {[
-                        ["depart_domicile", "Départ du domicile"],
-                        ["prise_service", "Prise de service"],
-                        ["retour", "Retour"],
-                      ].map(([field, label]) => (
-                        <label key={field}>
-                          <span className="block text-sm font-medium text-gray-700 mb-2">{label}</span>
-                          <input type="time" value={h[field]} onChange={e => updateHabit(h.jour, field, e.target.value)}
-                            className="w-full border border-gray-200 rounded-xl px-3 py-2 bg-white" />
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+
+            <div className="mt-4">
+              <div className="hidden md:grid grid-cols-[220px_1fr_1fr_1fr] gap-3 px-4 mb-2">
+                <div></div>
+                <div className="text-sm font-medium text-gray-700">Départ du domicile</div>
+                <div className="text-sm font-medium text-gray-700">Prise de service</div>
+                <div className="text-sm font-medium text-gray-700">Retour</div>
+              </div>
+
+              <div className="space-y-1">
+                {habits.map(h => (
+                  <div
+                    key={h.jour}
+                    className={`grid grid-cols-1 md:grid-cols-[220px_1fr_1fr_1fr] gap-3 items-center border rounded-xl px-4 py-2 ${
+                      h.actif
+                        ? "border-pink-200 bg-pink-50/30"
+                        : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    <label className="flex items-center gap-3 cursor-pointer min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={h.actif}
+                        onChange={e => toggleDay(h.jour, e.target.checked)}
+                        className="h-5 w-5 shrink-0"
+                      />
+                      <span className="font-semibold text-gray-900">
+                        {DAYS.find(d => d[0] === h.jour)?.[1]}
+                      </span>
+                    </label>
+
+                    {[
+                      ["depart_domicile", "Départ du domicile"],
+                      ["prise_service", "Prise de service"],
+                      ["retour", "Retour"],
+                    ].map(([field, label]) => (
+                      <label key={field} className="flex flex-col">
+                        <span className="md:hidden text-sm font-medium text-gray-700 mb-1">
+                          {label}
+                        </span>
+                        <input
+                          type="time"
+                          value={h[field]}
+                          disabled={!h.actif}
+                          onChange={e => updateHabit(h.jour, field, e.target.value)}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 bg-white disabled:bg-gray-50 disabled:text-gray-400"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
 
