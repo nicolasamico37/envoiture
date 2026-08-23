@@ -14,37 +14,6 @@ import {
 
 import { supabase } from "@/lib/supabase";
 
-const DAY_ORDER = [
-  "lundi",
-  "mardi",
-  "mercredi",
-  "jeudi",
-  "vendredi",
-  "samedi",
-  "dimanche",
-];
-
-const DAY_LABELS = {
-  lundi: "Lundi",
-  mardi: "Mardi",
-  mercredi: "Mercredi",
-  jeudi: "Jeudi",
-  vendredi: "Vendredi",
-  samedi: "Samedi",
-  dimanche: "Dimanche",
-};
-
-function createDefaultHabits() {
-  return DAY_ORDER.map((jour) => ({
-    id: null,
-    jour,
-    actif: false,
-    depart_domicile: "",
-    prise_service: "",
-    retour: "",
-  }));
-}
-
 export default function ProfilePage() {
   const {
     session,
@@ -79,9 +48,6 @@ export default function ProfilePage() {
 
   const [vehicles, setVehicles] =
     useState([]);
-
-  const [habits, setHabits] =
-    useState(createDefaultHabits());
 
   const [showVehicleForm, setShowVehicleForm] =
     useState(false);
@@ -118,12 +84,6 @@ export default function ProfilePage() {
 
   const [loadingVehicles, setLoadingVehicles] =
     useState(true);
-
-  const [loadingHabits, setLoadingHabits] =
-    useState(true);
-
-  const [habitsLoadFailed, setHabitsLoadFailed] =
-    useState(false);
 
   const [loadingSites, setLoadingSites] =
     useState(false);
@@ -164,13 +124,9 @@ export default function ProfilePage() {
 
       setParkings([]);
       setVehicles([]);
-      setHabits(createDefaultHabits());
-
       setLoadingResidence(false);
       setLoadingPreferences(false);
       setLoadingVehicles(false);
-      setLoadingHabits(false);
-      setHabitsLoadFailed(false);
 
       /*
        * Chargement des sites SNCF actifs.
@@ -245,8 +201,6 @@ export default function ProfilePage() {
       setLoadingResidence(true);
       setLoadingPreferences(true);
       setLoadingVehicles(true);
-      setLoadingHabits(true);
-      setHabitsLoadFailed(false);
 
       /*
        * -----------------------------------------------
@@ -354,104 +308,6 @@ export default function ProfilePage() {
               .vehicule_defaut_id ?? null,
         });
       }
-
-      /*
-       * -----------------------------------------------
-       * HABITUDES DE DÉPLACEMENT
-       * -----------------------------------------------
-       */
-
-      const {
-        data: habitsData,
-        error: habitsError,
-      } = await supabase
-        .from("habitudes_deplacement")
-        .select(`
-          id,
-          jour,
-          actif,
-          depart_domicile,
-          prise_service,
-          retour
-        `)
-        .eq(
-          "utilisateur_id",
-          profile.id
-        );
-
-      if (habitsError) {
-        console.error(
-          "Erreur lors du chargement des habitudes de déplacement :",
-          habitsError
-        );
-
-        setHabitsLoadFailed(true);
-
-        setMessage(
-          "Impossible de charger vos horaires de déplacement."
-        );
-      } else {
-        const loadedHabits =
-          createDefaultHabits();
-
-        (habitsData || []).forEach(
-          (habit) => {
-            const index =
-              loadedHabits.findIndex(
-                (item) =>
-                  item.jour ===
-                  habit.jour
-              );
-
-            if (index === -1) {
-              return;
-            }
-
-            loadedHabits[index] = {
-              id:
-                habit.id ?? null,
-
-              jour:
-                habit.jour,
-
-              actif:
-                Boolean(
-                  habit.actif
-                ),
-
-              depart_domicile:
-                habit.depart_domicile
-                  ? habit.depart_domicile.slice(
-                      0,
-                      5
-                    )
-                  : "",
-
-              prise_service:
-                habit.prise_service
-                  ? habit.prise_service.slice(
-                      0,
-                      5
-                    )
-                  : "",
-
-              retour:
-                habit.retour
-                  ? habit.retour.slice(
-                      0,
-                      5
-                    )
-                  : "",
-            };
-          }
-        );
-
-        setHabits(
-          loadedHabits
-        );
-      }
-
-      setLoadingHabits(false);
 
       /*
        * -----------------------------------------------
@@ -707,45 +563,6 @@ export default function ProfilePage() {
     setMessage("");
   }
 
-  function updateHabitField(
-    day,
-    field,
-    value
-  ) {
-    setHabits((current) =>
-      current.map(
-        (habit) =>
-          habit.jour === day
-            ? {
-                ...habit,
-                [field]: value,
-              }
-            : habit
-      )
-    );
-
-    setMessage("");
-  }
-
-  function toggleHabit(
-    day,
-    active
-  ) {
-    setHabits((current) =>
-      current.map(
-        (habit) =>
-          habit.jour === day
-            ? {
-                ...habit,
-                actif: active,
-              }
-            : habit
-      )
-    );
-
-    setMessage("");
-  }
-
   function updateVehicleField(
     field,
     value
@@ -828,142 +645,6 @@ export default function ProfilePage() {
     }
 
     return data.result;
-  }
-
-  /*
-   * ------------------------------------------------
-   * ENREGISTREMENT DES HABITUDES
-   * ------------------------------------------------
-   */
-
-  async function saveHabits(
-    userId
-  ) {
-    if (
-      habitsLoadFailed
-    ) {
-      throw new Error(
-        "Les horaires actuels n'ont pas pu être chargés. Ils ne seront pas modifiés afin d'éviter d'écraser vos habitudes."
-      );
-    }
-
-    for (const habit of habits) {
-      if (
-        !habit.actif
-      ) {
-        continue;
-      }
-
-      if (
-        !habit.depart_domicile ||
-        !habit.prise_service ||
-        !habit.retour
-      ) {
-        throw new Error(
-          `Veuillez renseigner les trois horaires pour ${DAY_LABELS[habit.jour]}.`
-        );
-      }
-    }
-
-    for (const habit of habits) {
-      const payload = {
-        utilisateur_id:
-          userId,
-
-        jour:
-          habit.jour,
-
-        actif:
-          Boolean(
-            habit.actif
-          ),
-
-        depart_domicile:
-          habit.actif &&
-          habit.depart_domicile
-            ? habit.depart_domicile
-            : null,
-
-        prise_service:
-          habit.actif &&
-          habit.prise_service
-            ? habit.prise_service
-            : null,
-
-        retour:
-          habit.actif &&
-          habit.retour
-            ? habit.retour
-            : null,
-
-        updated_at:
-          new Date().toISOString(),
-      };
-
-      if (habit.id) {
-        const {
-          error,
-        } = await supabase
-          .from(
-            "habitudes_deplacement"
-          )
-          .update(
-            payload
-          )
-          .eq(
-            "id",
-            habit.id
-          )
-          .eq(
-            "utilisateur_id",
-            userId
-          );
-
-        if (error) {
-          throw error;
-        }
-      } else {
-        const {
-          data,
-          error,
-        } = await supabase
-          .from(
-            "habitudes_deplacement"
-          )
-          .insert(
-            payload
-          )
-          .select(`
-            id,
-            jour,
-            actif,
-            depart_domicile,
-            prise_service,
-            retour
-          `)
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        if (data) {
-          setHabits((current) =>
-            current.map(
-              (currentHabit) =>
-                currentHabit.jour ===
-                data.jour
-                  ? {
-                      ...currentHabit,
-                      id:
-                        data.id,
-                    }
-                  : currentHabit
-            )
-          );
-        }
-      }
-    }
   }
 
   /*
@@ -1316,16 +997,6 @@ export default function ProfilePage() {
           return;
         }
       }
-
-      /*
-       * -----------------------------------------------
-       * HABITUDES DE DÉPLACEMENT
-       * -----------------------------------------------
-       */
-
-      await saveHabits(
-        userId
-      );
 
       /*
        * -----------------------------------------------
@@ -1973,99 +1644,89 @@ export default function ProfilePage() {
           </div>
 
           {/* ------------------------------------------ */}
-          {/* PARTICIPATION AU COVOITURAGE              */}
+          {/* SITE DE TRAVAIL                           */}
           {/* ------------------------------------------ */}
 
           <div className="border-t border-gray-100 pt-8">
 
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              Participation au covoiturage
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              Site de travail
             </h3>
 
-            <p className="text-sm text-gray-500 mb-6">
-              Indiquez comment vous souhaitez
-              participer. Vous pouvez sélectionner
-              les deux possibilités.
-            </p>
+            {profile ? (
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-              <label
-                className={`flex items-center gap-4 border rounded-2xl p-5 cursor-pointer transition ${
-                  preferences.peut_conduire
-                    ? "border-pink-500 bg-pink-50"
-                    : "border-gray-200 bg-white hover:bg-gray-50"
-                }`}
-              >
-
-                <input
-                  type="checkbox"
-                  checked={
-                    preferences.peut_conduire
-                  }
-                  onChange={(e) =>
-                    updatePreference(
-                      "peut_conduire",
-                      e.target.checked
-                    )
-                  }
-                  className="w-5 h-5 accent-pink-600"
-                />
-
-                <div>
-
-                  <div className="font-semibold text-gray-900">
-                    🚗 Conducteur
-                  </div>
-
-                  <div className="text-sm text-gray-500 mt-1">
-                    Je peux conduire pour
-                    un trajet de covoiturage.
-                  </div>
-
+              <>
+                <div className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-gray-50 text-gray-700">
+                  {profile.establishment ||
+                    "Site de travail non renseigné"}
                 </div>
 
-              </label>
+                <p className="text-xs text-gray-500 mt-2">
+                  Votre site de travail est défini dans
+                  votre profil professionnel.
+                </p>
+              </>
 
-              <label
-                className={`flex items-center gap-4 border rounded-2xl p-5 cursor-pointer transition ${
-                  preferences.peut_etre_passager
-                    ? "border-pink-500 bg-pink-50"
-                    : "border-gray-200 bg-white hover:bg-gray-50"
-                }`}
-              >
+            ) : (
 
-                <input
-                  type="checkbox"
-                  checked={
-                    preferences.peut_etre_passager
+              <>
+                <select
+                  value={
+                    formData.site_travail_id ??
+                    ""
                   }
                   onChange={(e) =>
-                    updatePreference(
-                      "peut_etre_passager",
-                      e.target.checked
+                    updateField(
+                      "site_travail_id",
+                      e.target.value
+                        ? Number(
+                            e.target.value
+                          )
+                        : null
                     )
                   }
-                  className="w-5 h-5 accent-pink-600"
-                />
+                  className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white"
+                  required
+                  disabled={
+                    loadingSites
+                  }
+                >
 
-                <div>
+                  <option value="">
+                    {loadingSites
+                      ? "Chargement des sites..."
+                      : "Sélectionnez votre site de travail"}
+                  </option>
 
-                  <div className="font-semibold text-gray-900">
-                    🧑 Passager
-                  </div>
+                  {sites.map(
+                    (site) => (
+                      <option
+                        key={
+                          site.id
+                        }
+                        value={
+                          site.id
+                        }
+                      >
+                        {site.name}
+                        {site.city
+                          ? ` — ${site.city}`
+                          : ""}
+                      </option>
+                    )
+                  )}
 
-                  <div className="text-sm text-gray-500 mt-1">
-                    Je peux être passager
-                    pour un trajet de
-                    covoiturage.
-                  </div>
+                </select>
 
-                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Sélectionnez votre site de travail.
+                </p>
+              </>
 
-              </label>
+            )}
 
-            </div>
+          </div>
+
 
             {/* ---------------------------------------- */}
             {/* PARKING                                 */}
@@ -2584,7 +2245,6 @@ export default function ProfilePage() {
               )}
 
             </div>
-          </div>
 
           {/* ------------------------------------------ */}
           {/* RÉSIDENCE                                 */}
@@ -2728,235 +2388,6 @@ export default function ProfilePage() {
 
           </div>
 
-          {/* ------------------------------------------ */}
-          {/* HABITUDES DE DÉPLACEMENT                  */}
-          {/* ------------------------------------------ */}
-
-          <div className="border-t border-gray-100 pt-8">
-
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              Horaires de déplacement
-            </h3>
-
-            <p className="text-sm text-gray-500 mb-6">
-              Définissez vos horaires habituels pour
-              chaque jour. Ces horaires seront utilisés
-              lors de la création de vos nouveaux trajets.
-              La modification de ces horaires ne change
-              jamais les trajets déjà créés.
-            </p>
-
-            <div className="space-y-4">
-
-              {habits.map((habit) => (
-
-                <div
-                  key={habit.jour}
-                  className={`border rounded-2xl p-5 transition ${
-                    habit.actif
-                      ? "border-pink-200 bg-pink-50/40"
-                      : "border-gray-200 bg-gray-50"
-                  }`}
-                >
-
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-5">
-
-                    <label className="flex items-center gap-3 lg:w-44 shrink-0 cursor-pointer">
-
-                      <input
-                        type="checkbox"
-                        checked={habit.actif}
-                        onChange={(event) =>
-                          toggleHabit(
-                            habit.jour,
-                            event.target.checked
-                          )
-                        }
-                        className="w-5 h-5 accent-pink-600"
-                      />
-
-                      <span className="font-semibold text-gray-900">
-                        {DAY_LABELS[habit.jour]}
-                      </span>
-
-                    </label>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-2">
-                          Départ du domicile
-                        </label>
-
-                        <input
-                          type="time"
-                          value={
-                            habit.depart_domicile
-                          }
-                          onChange={(event) =>
-                            updateHabitField(
-                              habit.jour,
-                              "depart_domicile",
-                              event.target.value
-                            )
-                          }
-                          disabled={!habit.actif}
-                          className="w-full border border-gray-200 rounded-xl px-4 py-3 bg-white disabled:bg-gray-100 disabled:text-gray-400"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-2">
-                          Prise de service
-                        </label>
-
-                        <input
-                          type="time"
-                          value={
-                            habit.prise_service
-                          }
-                          onChange={(event) =>
-                            updateHabitField(
-                              habit.jour,
-                              "prise_service",
-                              event.target.value
-                            )
-                          }
-                          disabled={!habit.actif}
-                          className="w-full border border-gray-200 rounded-xl px-4 py-3 bg-white disabled:bg-gray-100 disabled:text-gray-400"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-2">
-                          Retour
-                        </label>
-
-                        <input
-                          type="time"
-                          value={
-                            habit.retour
-                          }
-                          onChange={(event) =>
-                            updateHabitField(
-                              habit.jour,
-                              "retour",
-                              event.target.value
-                            )
-                          }
-                          disabled={!habit.actif}
-                          className="w-full border border-gray-200 rounded-xl px-4 py-3 bg-white disabled:bg-gray-100 disabled:text-gray-400"
-                        />
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                  {!habit.actif && (
-                    <p className="text-xs text-gray-500 mt-3 lg:ml-8">
-                      Jour non utilisé pour vos nouveaux trajets.
-                    </p>
-                  )}
-
-                </div>
-
-              ))}
-
-            </div>
-
-            <p className="text-xs text-gray-500 mt-4">
-              Pour qu'un jour puisse être utilisé lors de
-              la création d'un trajet, il doit être activé
-              et ses trois horaires doivent être renseignés.
-            </p>
-
-          </div>
-
-          {/* ------------------------------------------ */}
-          {/* SITE DE TRAVAIL                           */}
-          {/* ------------------------------------------ */}
-
-          <div className="border-t border-gray-100 pt-8">
-
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
-              Site de travail
-            </h3>
-
-            {profile ? (
-
-              <>
-                <div className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-gray-50 text-gray-700">
-                  {profile.establishment ||
-                    "Site de travail non renseigné"}
-                </div>
-
-                <p className="text-xs text-gray-500 mt-2">
-                  Votre site de travail est défini dans
-                  votre profil professionnel.
-                </p>
-              </>
-
-            ) : (
-
-              <>
-                <select
-                  value={
-                    formData.site_travail_id ??
-                    ""
-                  }
-                  onChange={(e) =>
-                    updateField(
-                      "site_travail_id",
-                      e.target.value
-                        ? Number(
-                            e.target.value
-                          )
-                        : null
-                    )
-                  }
-                  className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white"
-                  required
-                  disabled={
-                    loadingSites
-                  }
-                >
-
-                  <option value="">
-                    {loadingSites
-                      ? "Chargement des sites..."
-                      : "Sélectionnez votre site de travail"}
-                  </option>
-
-                  {sites.map(
-                    (site) => (
-                      <option
-                        key={
-                          site.id
-                        }
-                        value={
-                          site.id
-                        }
-                      >
-                        {site.name}
-                        {site.city
-                          ? ` — ${site.city}`
-                          : ""}
-                      </option>
-                    )
-                  )}
-
-                </select>
-
-                <p className="text-xs text-gray-500 mt-2">
-                  Sélectionnez votre site de travail.
-                </p>
-              </>
-
-            )}
-
-          </div>
-
           {message && (
             <div className="text-center text-sm text-gray-700">
               {message}
@@ -2969,7 +2400,6 @@ export default function ProfilePage() {
               saving ||
               loadingResidence ||
               loadingPreferences ||
-              loadingHabits ||
               loadingSites
             }
             className="w-full bg-gradient-to-r from-pink-600 to-red-500 text-white px-5 py-4 rounded-2xl font-semibold disabled:opacity-60"
