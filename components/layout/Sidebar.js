@@ -59,6 +59,12 @@ const links = [
   },
 
   {
+    href: "/preferences",
+    label: "Préférences",
+    icon: "⚙️",
+  },
+
+  {
     href: "/aide",
     label: "Aide",
     icon: "❓",
@@ -320,6 +326,7 @@ export default function Sidebar({
 
             </div>
           )}
+
         </div>
 
       </div>

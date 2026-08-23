@@ -309,6 +309,21 @@ export default function TripsPage() {
     bulkCancelling,
     setBulkCancelling,
   ] = useState(false);
+
+  const [
+    tripToEditPlaces,
+    setTripToEditPlaces,
+  ] = useState(null);
+
+  const [
+    editPlacesValue,
+    setEditPlacesValue,
+  ] = useState("");
+
+  const [
+    savingEditPlaces,
+    setSavingEditPlaces,
+  ] = useState(false);
   
   const [
     showScrollButtons,
@@ -330,6 +345,7 @@ export default function TripsPage() {
     heure_retour: "",
     parking_travail_id: "",
     vehicule_id: "",
+    places_proposees: "",
     commentaire: "",
   });
 
@@ -341,6 +357,7 @@ export default function TripsPage() {
     date_fin: "",
     jours: [],
     vehicule_id: "",
+    places_proposees: "",
     parking_travail_id: "",
     commentaire: "",
   });
@@ -712,6 +729,12 @@ useEffect(() => {
             current.vehicule_id ||
             defaultVehicle?.id ||
             "",
+          places_proposees:
+            current.places_proposees ||
+            String(
+              defaultVehicle?.places_proposees ||
+              ""
+            ),
           parking_travail_id:
             current.parking_travail_id ||
             defaultParking?.id ||
@@ -726,6 +749,12 @@ useEffect(() => {
             current.vehicule_id ||
             defaultVehicle?.id ||
             "",
+          places_proposees:
+            current.places_proposees ||
+            String(
+              defaultVehicle?.places_proposees ||
+              ""
+            ),
           parking_travail_id:
             current.parking_travail_id ||
             defaultParking?.id ||
@@ -1523,19 +1552,35 @@ const todayString =
       return;
     }
 
-    const places =
+    const vehicleMaxPlaces =
       Number(
         selectedVehicle.places_proposees
       );
 
+    const places =
+      Number(
+        newTrip.places_proposees
+      );
+
     if (
       !Number.isInteger(
-        places
+        vehicleMaxPlaces
       ) ||
-      places <= 0
+      vehicleMaxPlaces <= 0
     ) {
       setFormError(
-        "Le véhicule sélectionné ne possède pas un nombre de places valide."
+        "Le véhicule sélectionné ne possède pas un nombre maximal de passagers valide."
+      );
+      return;
+    }
+
+    if (
+      !Number.isInteger(places) ||
+      places <= 0 ||
+      places > vehicleMaxPlaces
+    ) {
+      setFormError(
+        `Le nombre de places proposées doit être compris entre 1 et ${vehicleMaxPlaces}.`
       );
       return;
     }
@@ -1954,19 +1999,35 @@ const todayString =
       return;
     }
 
-    const places =
+    const vehicleMaxPlaces =
       Number(
         selectedMultipleVehicle.places_proposees
       );
 
+    const places =
+      Number(
+        multipleTripForm.places_proposees
+      );
+
     if (
       !Number.isInteger(
-        places
+        vehicleMaxPlaces
       ) ||
-      places <= 0
+      vehicleMaxPlaces <= 0
     ) {
       setFormError(
-        "Le véhicule sélectionné ne possède pas un nombre de places valide."
+        "Le véhicule sélectionné ne possède pas un nombre maximal de passagers valide."
+      );
+      return;
+    }
+
+    if (
+      !Number.isInteger(places) ||
+      places <= 0 ||
+      places > vehicleMaxPlaces
+    ) {
+      setFormError(
+        `Le nombre de places proposées doit être compris entre 1 et ${vehicleMaxPlaces}.`
       );
       return;
     }
@@ -3179,6 +3240,131 @@ async function handleBulkCancel() {
 
   }
 
+  async function handleUpdateTripPlaces() {
+    if (!tripToEditPlaces) {
+      return;
+    }
+
+    setSavingEditPlaces(true);
+    setMessage("");
+
+    try {
+      const vehicleMaxPlaces = Number(
+        tripToEditPlaces.vehicules?.places_proposees
+      );
+
+      const newPlaces = Number(
+        editPlacesValue
+      );
+
+      if (
+        !Number.isInteger(vehicleMaxPlaces) ||
+        vehicleMaxPlaces <= 0
+      ) {
+        throw new Error(
+          "Le véhicule associé à ce trajet ne possède pas un nombre maximal de passagers valide."
+        );
+      }
+
+      if (
+        !Number.isInteger(newPlaces) ||
+        newPlaces <= 0 ||
+        newPlaces > vehicleMaxPlaces
+      ) {
+        throw new Error(
+          `Le nombre de places proposées doit être compris entre 1 et ${vehicleMaxPlaces}.`
+        );
+      }
+
+      const enrolledCount =
+        driverParticipations.filter(
+          (item) =>
+            item.trajet_id ===
+              tripToEditPlaces.id &&
+            (item.statut === "acceptee" ||
+              item.statut === "en_attente")
+        ).length;
+
+      if (newPlaces < enrolledCount) {
+        throw new Error(
+          `Impossible de réduire à ${newPlaces} place${newPlaces > 1 ? "s" : ""} : ${enrolledCount} passager${enrolledCount > 1 ? "s sont" : " est"} déjà inscrit${enrolledCount > 1 ? "s" : ""} sur ce trajet.`
+        );
+      }
+
+      const {
+        data: updatedTrip,
+        error,
+      } = await supabase
+        .from("trajets")
+        .update({
+          places_proposees: newPlaces,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", tripToEditPlaces.id)
+        .eq("conducteur_id", profile.id)
+        .select(`
+          id,
+          conducteur_id,
+          vehicule_id,
+          secteur_depart,
+          secteur_arrivee,
+          date_trajet,
+          heure_depart,
+          heure_prise_service,
+          heure_retour,
+          places_proposees,
+          commentaire,
+          statut,
+          parking_travail_id,
+          created_at,
+          updated_at,
+          vehicules (
+            id,
+            libelle,
+            marque,
+            modele,
+            couleur,
+            places_proposees
+          )
+        `)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      setTrips((current) =>
+        current.map((trip) =>
+          trip.id === updatedTrip.id
+            ? updatedTrip
+            : trip
+        )
+      );
+
+      setTripToEditPlaces(null);
+      setEditPlacesValue("");
+      setMessage("Nombre de places mis à jour ✅");
+
+      setTimeout(() => {
+        setMessage("");
+      }, 2200);
+    } catch (error) {
+      console.error(
+        "Erreur modification places trajet :",
+        error
+      );
+
+      setMessage(
+        `Erreur : ${
+          error?.message ||
+          "Impossible de modifier le nombre de places."
+        }`
+      );
+    } finally {
+      setSavingEditPlaces(false);
+    }
+  }
+
   /*
    * --------------------------------------------------
    * CARTE TRAJET
@@ -3593,12 +3779,29 @@ async function handleBulkCancel() {
               disabled={
                 isPast
               }
+              onClick={() => {
+                setTripToEditPlaces(trip);
+                setEditPlacesValue(
+                  String(trip.places_proposees || "")
+                );
+                setMessage("");
+              }}
+              className="w-full mt-5 bg-pink-100 text-pink-700 px-5 py-4 rounded-2xl font-semibold disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+            >
+              Modifier le nombre de places
+            </button>
+
+            <button
+              type="button"
+              disabled={
+                isPast
+              }
               onClick={() =>
                 requestCancelTrip(
                   trip
                 )
               }
-              className="w-full mt-5 bg-red-100 text-red-700 px-5 py-4 rounded-2xl font-semibold disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+              className="w-full mt-3 bg-red-100 text-red-700 px-5 py-4 rounded-2xl font-semibold disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
             >
               {isPast
                 ? "Trajet passé"
@@ -3951,6 +4154,59 @@ async function handleBulkCancel() {
             <div>
 
               <label className="block text-sm font-medium text-gray-700 mb-2">
+                Places proposées pour ces trajets
+              </label>
+
+              <select
+                value={
+                  multipleTripForm.places_proposees
+                }
+                onChange={(event) =>
+                  setMultipleTripForm(
+                    (current) => ({
+                      ...current,
+                      places_proposees:
+                        event.target.value,
+                    })
+                  )
+                }
+                disabled={!selectedMultipleVehicle}
+                className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white disabled:bg-gray-100"
+              >
+                <option value="">
+                  Sélectionner le nombre de places
+                </option>
+
+                {selectedMultipleVehicle &&
+                  Array.from(
+                    {
+                      length: Number(
+                        selectedMultipleVehicle.places_proposees
+                      ) || 0,
+                    },
+                    (_, index) => index + 1
+                  ).map((count) => (
+                    <option
+                      key={count}
+                      value={count}
+                    >
+                      {count} passager
+                      {count > 1 ? "s" : ""}
+                    </option>
+                  ))}
+              </select>
+
+              {selectedMultipleVehicle && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Maximum autorisé avec ce véhicule : {selectedMultipleVehicle.places_proposees} passager{selectedMultipleVehicle.places_proposees > 1 ? "s" : ""}.
+                </p>
+              )}
+
+            </div>
+
+            <div>
+
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Parking de travail
               </label>
 
@@ -4009,6 +4265,15 @@ async function handleBulkCancel() {
                       ...current,
                       vehicule_id:
                         event.target.value,
+                      places_proposees:
+                        String(
+                          vehicles.find(
+                            (vehicle) =>
+                              vehicle.id ===
+                              event.target.value
+                          )?.places_proposees ||
+                          ""
+                        ),
                     })
                   )
                 }
@@ -4036,16 +4301,70 @@ async function handleBulkCancel() {
                       {
                         vehicle.places_proposees
                       }{" "}
-                      place
+                      passager
                       {vehicle.places_proposees >
                       1
                         ? "s"
                         : ""}
+                      {" maximum"}
                     </option>
                   )
                 )}
 
               </select>
+
+            </div>
+
+            <div>
+
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Places proposées pour ce trajet
+              </label>
+
+              <select
+                value={
+                  newTrip.places_proposees
+                }
+                onChange={(event) =>
+                  setNewTrip(
+                    (current) => ({
+                      ...current,
+                      places_proposees:
+                        event.target.value,
+                    })
+                  )
+                }
+                disabled={!selectedVehicle}
+                className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white disabled:bg-gray-100"
+              >
+                <option value="">
+                  Sélectionner le nombre de places
+                </option>
+
+                {selectedVehicle &&
+                  Array.from(
+                    {
+                      length: Number(
+                        selectedVehicle.places_proposees
+                      ) || 0,
+                    },
+                    (_, index) => index + 1
+                  ).map((count) => (
+                    <option
+                      key={count}
+                      value={count}
+                    >
+                      {count} passager
+                      {count > 1 ? "s" : ""}
+                    </option>
+                  ))}
+              </select>
+
+              {selectedVehicle && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Maximum autorisé avec ce véhicule : {selectedVehicle.places_proposees} passager{selectedVehicle.places_proposees > 1 ? "s" : ""}.
+                </p>
+              )}
 
             </div>
 
@@ -4249,6 +4568,15 @@ async function handleBulkCancel() {
                       ...current,
                       vehicule_id:
                         event.target.value,
+                      places_proposees:
+                        String(
+                          vehicles.find(
+                            (vehicle) =>
+                              vehicle.id ===
+                              event.target.value
+                          )?.places_proposees ||
+                          ""
+                        ),
                     })
                   )
                 }
@@ -4276,11 +4604,12 @@ async function handleBulkCancel() {
                       {
                         vehicle.places_proposees
                       }{" "}
-                      place
+                      passager
                       {vehicle.places_proposees >
                       1
                         ? "s"
                         : ""}
+                      {" maximum"}
                     </option>
                   )
                 )}
@@ -4916,6 +5245,99 @@ async function handleBulkCancel() {
             </div>
 
                     </div>
+
+        </div>
+
+      )}
+
+      {tripToEditPlaces && (
+
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 lg:p-8 shadow-xl">
+
+            <h2 className="text-xl font-bold text-gray-900">
+              Modifier le nombre de places
+            </h2>
+
+            <p className="text-sm text-gray-600 mt-3">
+              {formatDate(tripToEditPlaces.date_trajet)}
+            </p>
+
+            <p className="text-sm text-gray-500 mt-2">
+              Vous pouvez réduire ou augmenter le nombre de places proposées, dans la limite du véhicule et des passagers déjà inscrits.
+            </p>
+
+            <label className="block text-sm font-medium text-gray-700 mt-5 mb-2">
+              Places proposées pour ce trajet
+            </label>
+
+            <select
+              value={editPlacesValue}
+              onChange={(event) =>
+                setEditPlacesValue(event.target.value)
+              }
+              disabled={savingEditPlaces}
+              className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white disabled:bg-gray-100"
+            >
+              <option value="">
+                Sélectionner le nombre de places
+              </option>
+
+              {Array.from(
+                {
+                  length:
+                    Number(
+                      tripToEditPlaces.vehicules?.places_proposees
+                    ) || 0,
+                },
+                (_, index) => index + 1
+              ).map((count) => (
+                <option
+                  key={count}
+                  value={count}
+                >
+                  {count} passager
+                  {count > 1 ? "s" : ""}
+                </option>
+              ))}
+            </select>
+
+            <p className="text-xs text-gray-500 mt-2">
+              Maximum avec ce véhicule : {tripToEditPlaces.vehicules?.places_proposees || "—"} passager{Number(tripToEditPlaces.vehicules?.places_proposees) > 1 ? "s" : ""}.
+            </p>
+
+            <div className="flex flex-col-reverse sm:flex-row gap-3 mt-6">
+
+              <button
+                type="button"
+                disabled={savingEditPlaces}
+                onClick={() => {
+                  setTripToEditPlaces(null);
+                  setEditPlacesValue("");
+                }}
+                className="flex-1 bg-gray-100 text-gray-700 px-5 py-3 rounded-2xl font-semibold disabled:opacity-50"
+              >
+                Retour
+              </button>
+
+              <button
+                type="button"
+                disabled={
+                  savingEditPlaces ||
+                  !editPlacesValue
+                }
+                onClick={handleUpdateTripPlaces}
+                className="flex-1 bg-pink-600 text-white px-5 py-3 rounded-2xl font-semibold disabled:opacity-50"
+              >
+                {savingEditPlaces
+                  ? "Enregistrement..."
+                  : "Enregistrer"}
+              </button>
+
+            </div>
+
+          </div>
 
         </div>
 

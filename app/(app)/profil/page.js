@@ -86,6 +86,9 @@ export default function ProfilePage() {
   const [showVehicleForm, setShowVehicleForm] =
     useState(false);
 
+  const [editingVehicleId, setEditingVehicleId] =
+    useState(null);
+
   const [vehicleForm, setVehicleForm] =
     useState({
       libelle: "",
@@ -531,6 +534,10 @@ export default function ProfilePage() {
         .eq(
           "statut",
           "actif"
+        )
+        .is(
+          "archived_at",
+          null
         )
         .order(
           "created_at",
@@ -1358,10 +1365,39 @@ export default function ProfilePage() {
    * ------------------------------------------------
    */
 
-  async function handleAddVehicle() {
-    if (
-      !preferences.peut_conduire
-    ) {
+  function resetVehicleForm() {
+    setVehicleForm({
+      libelle: "",
+      marque: "",
+      modele: "",
+      couleur: "",
+      places_proposees: 1,
+    });
+    setEditingVehicleId(null);
+    setShowVehicleForm(false);
+    setVehicleMessage("");
+  }
+
+  function handleEditVehicle(vehicle) {
+    if (!preferences.peut_conduire) {
+      return;
+    }
+
+    setEditingVehicleId(vehicle.id);
+    setVehicleForm({
+      libelle: vehicle.libelle || "",
+      marque: vehicle.marque || "",
+      modele: vehicle.modele || "",
+      couleur: vehicle.couleur || "",
+      places_proposees:
+        Number(vehicle.places_proposees) || 1,
+    });
+    setShowVehicleForm(true);
+    setVehicleMessage("");
+  }
+
+  async function handleSaveVehicle() {
+    if (!preferences.peut_conduire) {
       return;
     }
 
@@ -1373,7 +1409,6 @@ export default function ProfilePage() {
       setVehicleMessage(
         "Utilisateur non authentifié."
       );
-
       return;
     }
 
@@ -1389,16 +1424,14 @@ export default function ProfilePage() {
     const couleur =
       vehicleForm.couleur.trim();
 
-    const places =
-      Number(
-        vehicleForm.places_proposees
-      );
+    const places = Number(
+      vehicleForm.places_proposees
+    );
 
     if (!libelle) {
       setVehicleMessage(
         "Veuillez donner un nom à votre véhicule."
       );
-
       return;
     }
 
@@ -1407,9 +1440,8 @@ export default function ProfilePage() {
       places < 1
     ) {
       setVehicleMessage(
-        "Le nombre de places proposées doit être supérieur à 0."
+        "Le nombre maximal de passagers doit être supérieur à 0."
       );
-
       return;
     }
 
@@ -1417,31 +1449,110 @@ export default function ProfilePage() {
     setVehicleMessage("");
 
     try {
+      if (editingVehicleId) {
+        const { count, error: tripCountError } =
+          await supabase
+            .from("trajets")
+            .select(
+              "id",
+              {
+                count: "exact",
+                head: true,
+              }
+            )
+            .eq(
+              "vehicule_id",
+              editingVehicleId
+            )
+            .gt(
+              "places_proposees",
+              places
+            )
+            .in("statut", [
+              "ouvert",
+              "complet",
+            ]);
+
+        if (tripCountError) {
+          throw tripCountError;
+        }
+
+        if (count > 0) {
+          setVehicleMessage(
+            "Impossible de réduire cette capacité : au moins un trajet existant propose déjà davantage de places."
+          );
+          return;
+        }
+
+        const {
+          data: updatedVehicle,
+          error: updateError,
+        } = await supabase
+          .from("vehicules")
+          .update({
+            libelle,
+            marque: marque || null,
+            modele: modele || null,
+            couleur: couleur || null,
+            places_proposees: places,
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq(
+            "id",
+            editingVehicleId
+          )
+          .eq(
+            "utilisateur_id",
+            userId
+          )
+          .select(`
+            id,
+            utilisateur_id,
+            libelle,
+            marque,
+            modele,
+            couleur,
+            places_proposees,
+            statut,
+            created_at,
+            updated_at
+          `)
+          .single();
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        setVehicles((current) =>
+          current.map((vehicle) =>
+            vehicle.id ===
+            editingVehicleId
+              ? updatedVehicle
+              : vehicle
+          )
+        );
+
+        resetVehicleForm();
+        setVehicleMessage(
+          "Véhicule modifié ✅"
+        );
+        return;
+      }
+
       const {
         data: newVehicle,
         error: vehicleError,
       } = await supabase
         .from("vehicules")
         .insert({
-          utilisateur_id:
-            userId,
-
+          utilisateur_id: userId,
           libelle,
-
-          marque:
-            marque || null,
-
-          modele:
-            modele || null,
-
-          couleur:
-            couleur || null,
-
-          places_proposees:
-            places,
-
-          statut:
-            "actif",
+          marque: marque || null,
+          modele: modele || null,
+          couleur: couleur || null,
+          places_proposees: places,
+          statut: "actif",
         })
         .select(`
           id,
@@ -1458,27 +1569,13 @@ export default function ProfilePage() {
         .single();
 
       if (vehicleError) {
-        console.error(
-          "Erreur lors de la création du véhicule :",
-          vehicleError
-        );
-
-        setVehicleMessage(
-          `Erreur véhicule : ${
-            vehicleError.message ||
-            "Impossible d'ajouter le véhicule."
-          }`
-        );
-
-        return;
+        throw vehicleError;
       }
 
       if (!newVehicle) {
-        setVehicleMessage(
+        throw new Error(
           "Le véhicule n'a pas pu être récupéré après son enregistrement."
         );
-
-        return;
       }
 
       setVehicles((current) => [
@@ -1486,18 +1583,9 @@ export default function ProfilePage() {
         newVehicle,
       ]);
 
-      /*
-       * Si c'est le premier véhicule,
-       * il devient automatiquement le
-       * véhicule par défaut.
-       */
-
-      if (
-        vehicles.length === 0
-      ) {
+      if (vehicles.length === 0) {
         const {
-          error:
-            defaultError,
+          error: defaultError,
         } = await supabase
           .from(
             "preferences_utilisateur"
@@ -1505,7 +1593,6 @@ export default function ProfilePage() {
           .update({
             vehicule_defaut_id:
               newVehicle.id,
-
             updated_at:
               new Date().toISOString(),
           })
@@ -1515,55 +1602,27 @@ export default function ProfilePage() {
           );
 
         if (defaultError) {
-          console.error(
-            "Erreur lors de la définition du véhicule par défaut :",
-            defaultError
-          );
-
-          setVehicleMessage(
-            `Véhicule ajouté, mais impossible de le définir par défaut : ${
-              defaultError.message
-            }`
-          );
-        } else {
-          setPreferences(
-            (current) => ({
-              ...current,
-              vehicule_defaut_id:
-                newVehicle.id,
-            })
-          );
+          throw defaultError;
         }
+
+        setPreferences(
+          (current) => ({
+            ...current,
+            vehicule_defaut_id:
+              newVehicle.id,
+          })
+        );
       }
 
-      setVehicleForm({
-        libelle: "",
-        marque: "",
-        modele: "",
-        couleur: "",
-        places_proposees: 1,
-      });
-
-      setShowVehicleForm(false);
-
-      if (
+      resetVehicleForm();
+      setVehicleMessage(
         vehicles.length > 0
-      ) {
-        setVehicleMessage(
-          "Véhicule ajouté ✅"
-        );
-      } else {
-        setVehicleMessage(
-          "Véhicule ajouté et défini par défaut ✅"
-        );
-      }
-
-      setTimeout(() => {
-        setVehicleMessage("");
-      }, 2500);
+          ? "Véhicule ajouté ✅"
+          : "Véhicule ajouté et défini par défaut ✅"
+      );
     } catch (error) {
       console.error(
-        "Erreur lors de l'ajout du véhicule :",
+        "Erreur lors de l'enregistrement du véhicule :",
         error
       );
 
@@ -1571,6 +1630,120 @@ export default function ProfilePage() {
         `Erreur véhicule : ${
           error?.message ||
           "Une erreur est survenue."
+        }`
+      );
+    } finally {
+      setSavingVehicle(false);
+    }
+  }
+
+  async function handleDeleteVehicle(vehicle) {
+    if (!preferences.peut_conduire) {
+      return;
+    }
+
+    const userId =
+      profile?.id ||
+      session?.user?.id;
+
+    if (!userId) {
+      setVehicleMessage(
+        "Utilisateur non authentifié."
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Supprimer le véhicule « ${
+        vehicle.libelle || "Véhicule"
+      } » ?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setSavingVehicle(true);
+    setVehicleMessage("");
+
+    try {
+      if (
+        preferences.vehicule_defaut_id ===
+        vehicle.id
+      ) {
+        const {
+          error: preferenceError,
+        } = await supabase
+          .from(
+            "preferences_utilisateur"
+          )
+          .update({
+            vehicule_defaut_id: null,
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq(
+            "utilisateur_id",
+            userId
+          );
+
+        if (preferenceError) {
+          throw preferenceError;
+        }
+
+        setPreferences(
+          (current) => ({
+            ...current,
+            vehicule_defaut_id: null,
+          })
+        );
+      }
+
+      const { error: archiveError } =
+        await supabase
+          .from("vehicules")
+          .update({
+            archived_at:
+              new Date().toISOString(),
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq("id", vehicle.id)
+          .eq(
+            "utilisateur_id",
+            userId
+          );
+
+      if (archiveError) {
+        throw archiveError;
+      }
+
+      setVehicles((current) =>
+        current.filter(
+          (item) => item.id !== vehicle.id
+        )
+      );
+
+      if (
+        editingVehicleId ===
+        vehicle.id
+      ) {
+        resetVehicleForm();
+      }
+
+      setVehicleMessage(
+        "Véhicule supprimé ✅"
+      );
+    } catch (error) {
+      console.error(
+        "Erreur lors de la suppression du véhicule :",
+        error
+      );
+
+      setVehicleMessage(
+        `Erreur véhicule : ${
+          error?.message ||
+          "Impossible de supprimer le véhicule."
         }`
       );
     } finally {
@@ -2028,12 +2201,20 @@ export default function ProfilePage() {
                     loadingVehicles
                   }
                   onClick={() => {
-                    setShowVehicleForm(
-                      (current) =>
-                        !current
-                    );
-
-                    setVehicleMessage("");
+                    if (showVehicleForm) {
+                      resetVehicleForm();
+                    } else {
+                      setEditingVehicleId(null);
+                      setVehicleForm({
+                        libelle: "",
+                        marque: "",
+                        modele: "",
+                        couleur: "",
+                        places_proposees: 1,
+                      });
+                      setShowVehicleForm(true);
+                      setVehicleMessage("");
+                    }
                   }}
                   className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -2129,13 +2310,11 @@ export default function ProfilePage() {
                                 </div>
 
                                 <div className="text-sm text-gray-600 mt-2">
-                                  {
-                                    vehicle.places_proposees
-                                  }{" "}
-                                  {vehicle.places_proposees >
-                                  1
-                                    ? "places proposées"
-                                    : "place proposée"}
+                                  {vehicle.places_proposees} {
+                                    vehicle.places_proposees > 1
+                                      ? "passagers maximum"
+                                      : "passager maximum"
+                                  }
                                 </div>
 
                               </div>
@@ -2171,6 +2350,42 @@ export default function ProfilePage() {
 
                             </div>
 
+                            <div className="flex flex-wrap gap-2 mt-4">
+
+                              <button
+                                type="button"
+                                disabled={
+                                  !preferences.peut_conduire ||
+                                  savingVehicle
+                                }
+                                onClick={() =>
+                                  handleEditVehicle(
+                                    vehicle
+                                  )
+                                }
+                                className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 font-medium disabled:opacity-50"
+                              >
+                                Modifier
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={
+                                  !preferences.peut_conduire ||
+                                  savingVehicle
+                                }
+                                onClick={() =>
+                                  handleDeleteVehicle(
+                                    vehicle
+                                  )
+                                }
+                                className="px-4 py-2 rounded-xl bg-red-50 border border-red-100 text-red-700 font-medium disabled:opacity-50"
+                              >
+                                Supprimer
+                              </button>
+
+                            </div>
+
                           </div>
 
                         );
@@ -2193,7 +2408,9 @@ export default function ProfilePage() {
                 >
 
                   <h5 className="font-semibold text-gray-900">
-                    Ajouter un véhicule
+                    {editingVehicleId
+                      ? "Modifier le véhicule"
+                      : "Ajouter un véhicule"}
                   </h5>
 
                   <div>
@@ -2298,7 +2515,7 @@ export default function ProfilePage() {
                     <div>
 
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Places proposées
+                        Passagers maximum
                       </label>
 
                       <input
@@ -2323,9 +2540,9 @@ export default function ProfilePage() {
                   </div>
 
                   <p className="text-xs text-gray-500">
-                    Indiquez le nombre de places
-                    que vous acceptez de proposer
-                    aux covoitureurs, hors conducteur.
+                    Indiquez le nombre maximum de
+                    passagers que vous acceptez
+                    d'emmener, hors conducteur.
                   </p>
 
                   {vehicleMessage && (
@@ -2337,7 +2554,7 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={
-                      handleAddVehicle
+                      handleSaveVehicle
                     }
                     disabled={
                       savingVehicle
@@ -2345,7 +2562,9 @@ export default function ProfilePage() {
                     className="w-full bg-gray-900 text-white px-5 py-3 rounded-2xl font-semibold disabled:opacity-60"
                   >
                     {savingVehicle
-                      ? "Ajout..."
+                      ? "Enregistrement..."
+                      : editingVehicleId
+                      ? "Enregistrer les modifications"
                       : "Ajouter le véhicule"}
                   </button>
 
