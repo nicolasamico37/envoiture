@@ -59,7 +59,8 @@ const sections = [
           "Dans « Trajets », sélectionnez le trajet concerné puis utilisez l'action permettant de le supprimer. Une fois supprimé, il ne sera plus pris en compte comme trajet disponible.",
       },
       {
-        question: "Quelle est la différence entre mes horaires habituels et mes trajets ?",
+        question:
+          "Quelle est la différence entre mes horaires habituels et mes trajets ?",
         answer:
           "Les horaires habituels correspondent à vos habitudes de déplacement, jour par jour. Ils servent notamment à vous faire gagner du temps lors de la création de vos trajets. Vous pouvez les consulter et les modifier depuis la page « Mon profil ». Un trajet correspond, lui, à un déplacement réellement proposé ou recherché à une date donnée. Modifier vos horaires habituels ne modifie pas les trajets déjà créés.",
       },
@@ -178,32 +179,12 @@ const sections = [
       {
         question: "Comment fonctionne la compatibilité ?",
         answer:
-          "La compatibilité repose sur plusieurs éléments liés aux déplacements, notamment les établissements, les jours, les horaires et les informations disponibles sur les trajets. Les conditions les plus proches permettent d'obtenir les correspondances les plus pertinentes.",
+          "La compatibilité prend notamment en compte les établissements, les jours, les horaires et les informations liées aux trajets. Plus les conditions de déplacement sont proches, plus la compatibilité est pertinente.",
       },
       {
-        question: "Que signifie le pourcentage de compatibilité ?",
+        question: "Quelles informations sont visibles par les autres utilisateurs ?",
         answer:
-          "Le pourcentage donne une indication synthétique du niveau de correspondance entre vos déplacements et ceux d'un autre utilisateur. Il ne constitue pas une garantie qu'un covoiturage sera possible : il vous appartient ensuite de prendre contact avec le collègue pour vérifier que l'organisation vous convient.",
-      },
-      {
-        question: "Pourquoi un collègue n'apparaît-il pas dans mes résultats ?",
-        answer:
-          "Les résultats dépendent des informations disponibles et de leur compatibilité avec vos propres déplacements. Si les jours, les horaires ou les autres critères nécessaires sont trop éloignés, un collègue peut ne pas apparaître comme une correspondance pertinente.",
-      },
-      {
-        question: "Puis-je voir les trajets d'un collègue ?",
-        answer:
-          "Lorsqu'un profil est compatible, les informations utiles peuvent permettre de consulter les trajets correspondants afin de mieux comprendre les possibilités de covoiturage.",
-      },
-      {
-        question: "Comment contacter un collègue trouvé dans les profils ?",
-        answer:
-          "Lorsqu'un profil ou un trajet vous intéresse, utilisez la fonction de contact proposée par EnVoiture. Vous pourrez alors échanger directement avec le collègue concerné pour organiser votre covoiturage.",
-      },
-      {
-        question: "Je ne trouve aucun collègue compatible. Que faire ?",
-        answer:
-          "Commencez par vérifier que votre profil, vos jours de déplacement et vos horaires habituels sont correctement renseignés. Une recherche peut également ne donner aucun résultat si aucun collègue ne présente actuellement un déplacement suffisamment proche du vôtre.",
+          "EnVoiture est conçu pour limiter les informations personnelles exposées. Les adresses personnelles complètes ne sont pas affichées publiquement. Les informations nécessaires à la recherche de compatibilités sont présentées afin de permettre aux collègues de prendre contact.",
       },
     ],
   },
@@ -326,19 +307,23 @@ const sections = [
     icon: "🛠️",
     questions: [
       {
+        question: "Je ne trouve aucun collègue compatible. Que faire ?",
+        answer:
+          "Commencez par vérifier que votre profil, vos jours de déplacement et vos horaires habituels sont correctement renseignés. Une recherche peut également ne donner aucun résultat si aucun collègue ne présente actuellement un déplacement suffisamment proche du vôtre.",
+      },
+      {
         question: "Je rencontre un problème que cette aide ne résout pas.",
         answer:
           "Si vous ne trouvez pas la réponse à votre question dans cette rubrique, contactez votre référent EnVoiture. Pensez à lui indiquer le problème rencontré, la page concernée et, si possible, le message d'erreur affiché.",
       },
     ],
-  }
+  },
 ];
 
 export default function HelpPage() {
   const [search, setSearch] = useState("");
   const [openQuestion, setOpenQuestion] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
-
 
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -415,7 +400,7 @@ export default function HelpPage() {
               </span>
 
               <input
-                type="search"
+                type="text"
                 value={search}
                 onChange={(event) => {
                   setSearch(event.target.value);
@@ -423,8 +408,7 @@ export default function HelpPage() {
                   setOpenQuestion(null);
                 }}
                 placeholder="Rechercher dans l'aide..."
-                aria-label="Rechercher dans l'aide"
-                className="w-full bg-white text-gray-900 placeholder:text-gray-500 border border-white/30 rounded-2xl px-12 py-4 outline-none focus:ring-4 focus:ring-white/30"
+                className="w-full bg-white text-gray-900 placeholder:text-gray-400 rounded-2xl px-12 py-4 outline-none border-2 border-white/30 focus:border-white"
               />
             </div>
           </div>
@@ -455,18 +439,22 @@ export default function HelpPage() {
                     </div>
                   </button>
                 ))}
-              </div>
 
-              <Link
-                href="/signalements"
-                className="block w-full sm:w-auto min-w-[260px] text-left bg-white border-2 border-red-300 rounded-2xl p-5 hover:bg-red-50 hover:border-red-400 transition"
-              >
-                <div className="text-3xl mb-3">🚨</div>
-                <div className="font-bold text-red-600">Signalements</div>
-                <div className="text-sm text-gray-500 mt-1">
-                  Signaler un problème ou un comportement inapproprié
-                </div>
-              </Link>
+                <Link
+                  href="/signalements"
+                  className="block mt-4 sm:mt-0 text-left bg-white border-2 border-red-300 rounded-2xl p-5 hover:bg-red-50 hover:border-red-400 transition"
+                >
+                  <div className="text-3xl mb-3">🚨</div>
+
+                  <div className="font-bold text-red-600">
+                    Signalements
+                  </div>
+
+                  <div className="text-sm text-gray-500 mt-1">
+                    Signaler un problème ou un comportement inapproprié
+                  </div>
+                </Link>
+              </div>
             </div>
           )}
 
