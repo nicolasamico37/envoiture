@@ -1,318 +1,252 @@
 import Link from "next/link";
-
 import Image from "next/image";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-white overflow-hidden">
-      <section className="relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-50 via-white to-red-50" />
+    <main className="min-h-screen bg-white text-gray-900">
+      <section className="relative overflow-hidden bg-gradient-to-br from-pink-50 via-white to-red-50">
+        <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-pink-200 blur-3xl opacity-30" />
+        <div className="absolute bottom-0 -left-24 h-80 w-80 rounded-full bg-red-200 blur-3xl opacity-20" />
 
-        <div className="relative max-w-7xl mx-auto px-6 lg:px-10 py-10 lg:py-16">
-          <header className="flex items-center justify-between mb-16">
-            <div className="flex items-center">
+        <div className="relative mx-auto max-w-7xl px-6 py-8 lg:px-10 lg:py-12">
+          <header className="mb-20 flex items-center justify-between gap-6">
+            <Link href="/" aria-label="EnVoiture">
               <Image
                 src="/logo-full.png"
                 alt="EnVoiture"
                 width={520}
                 height={160}
-                className="h-auto w-auto max-w-[240px] lg:max-w-[420px]"
+                className="h-auto w-auto max-w-[210px] lg:max-w-[330px]"
                 priority
               />
-            </div>
+            </Link>
 
-            <div className="flex items-center gap-4">
+            <div className="flex gap-3">
               <Link
                 href="/dashboard"
-                className="hidden lg:flex items-center justify-center px-6 py-3 rounded-2xl bg-white border border-gray-200 hover:bg-gray-50 transition font-medium"
+                className="hidden rounded-2xl border border-gray-200 bg-white px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-50 sm:flex"
               >
-                Accéder à l'application
+                Se connecter
               </Link>
-
               <Link
                 href="/dashboard"
-                className="flex items-center justify-center px-6 py-3 rounded-2xl bg-gradient-to-r from-pink-600 to-red-500 text-white font-semibold shadow-lg shadow-pink-200"
+                className="rounded-2xl bg-gradient-to-r from-pink-600 to-red-500 px-5 py-3 font-bold text-white shadow-lg shadow-pink-200 transition hover:scale-[1.02]"
               >
                 Commencer
               </Link>
             </div>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+          <div className="grid items-center gap-14 pb-24 lg:grid-cols-2 lg:gap-20">
             <div>
-              <div className="inline-flex items-center gap-3 bg-white border border-pink-100 rounded-full px-5 py-3 mb-8 shadow-sm">
-                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-
-                <p className="text-sm font-medium text-gray-700">
-                  Plateforme collaborative SNCF
-                </p>
+              <div className="mb-7 inline-flex items-center gap-3 rounded-full border border-pink-100 bg-white px-5 py-3 shadow-sm">
+                <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                <span className="text-sm font-semibold text-gray-700">
+                  Plateforme collaborative entre agents SNCF
+                </span>
               </div>
 
-              <h1 className="text-5xl lg:text-7xl font-black text-gray-900 leading-tight mb-8">
+              <h1 className="mb-7 text-5xl font-black leading-tight tracking-tight lg:text-7xl">
                 Le covoiturage
-                <span className="bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent">
-                  {" "}
-                  intelligent{" "}
+                <span className="block bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent">
+                  entre collègues.
                 </span>
-                entre collègues.
               </h1>
 
-              <p className="text-xl text-gray-600 leading-relaxed mb-10">
-                EnVoiture facilite les trajets domicile-travail
-                entre agents SNCF grâce à une plateforme moderne,
-                collaborative et pensée pour les horaires décalés.
+              <p className="mb-9 max-w-2xl text-xl leading-relaxed text-gray-600 lg:text-2xl">
+                EnVoiture facilite vos trajets domicile-travail avec des
+                collègues qui partagent les mêmes contraintes professionnelles.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-5">
+              <div className="flex flex-col gap-4 sm:flex-row">
                 <Link
                   href="/dashboard"
-                  className="flex items-center justify-center px-8 py-5 rounded-3xl bg-gradient-to-r from-pink-600 to-red-500 text-white font-bold text-lg shadow-xl shadow-pink-200 hover:scale-[1.02] transition"
+                  className="rounded-2xl bg-gradient-to-r from-pink-600 to-red-500 px-8 py-4 text-center text-lg font-bold text-white shadow-xl shadow-pink-200 transition hover:scale-[1.02]"
                 >
-                  Accéder à la plateforme
+                  Accéder à EnVoiture
                 </Link>
-
-                <button className="flex items-center justify-center px-8 py-5 rounded-3xl bg-white border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition">
-                  Découvrir le concept
-                </button>
-              </div>
-
-              <div className="grid grid-cols-3 gap-5 mt-14">
-                <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-                  <h2 className="text-3xl font-black text-gray-900 mb-2">
-                    🚗
-                  </h2>
-
-                  <p className="text-sm text-gray-600">
-                    Mutualisation des trajets
-                  </p>
-                </div>
-
-                <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-                  <h2 className="text-3xl font-black text-gray-900 mb-2">
-                    ⏰
-                  </h2>
-
-                  <p className="text-sm text-gray-600">
-                    Compatible horaires décalés
-                  </p>
-                </div>
-
-                <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-                  <h2 className="text-3xl font-black text-gray-900 mb-2">
-                    🌱
-                  </h2>
-
-                  <p className="text-sm text-gray-600">
-                    Mobilité plus durable
-                  </p>
-                </div>
+                <a
+                  href="#fonctionnement"
+                  className="rounded-2xl border border-gray-200 bg-white px-8 py-4 text-center font-semibold text-gray-700 transition hover:bg-gray-50"
+                >
+                  Découvrir le fonctionnement
+                </a>
               </div>
             </div>
 
-            <div className="relative">
-              <div className="absolute -top-10 -right-10 w-72 h-72 bg-pink-200 rounded-full blur-3xl opacity-30" />
-
-              <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-red-200 rounded-full blur-3xl opacity-30" />
-
-              <div className="relative bg-white border border-gray-200 rounded-[40px] p-6 lg:p-8 shadow-2xl shadow-pink-100">
-                <div className="flex items-center justify-between mb-8">
-                  <div>
-                    <p className="text-sm text-gray-500 mb-2">
-                      Aujourd'hui
-                    </p>
-
-                    <h2 className="text-3xl font-black text-gray-900">
-                      12 trajets actifs
-                    </h2>
-                  </div>
-
-                  <div className="w-16 h-16 rounded-3xl bg-gradient-to-r from-pink-600 to-red-500 text-white flex items-center justify-center text-3xl shadow-lg">
-                    🚗
-                  </div>
+            <div className="rounded-[36px] border border-gray-200 bg-white p-6 shadow-2xl shadow-pink-100 lg:p-8">
+              <div className="mb-7 flex items-center justify-between">
+                <div>
+                  <p className="mb-1 text-sm text-gray-500">Exemple</p>
+                  <h2 className="text-2xl font-black lg:text-3xl">
+                    Votre trajet quotidien
+                  </h2>
                 </div>
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-pink-600 to-red-500 text-2xl text-white">
+                  🚗
+                </div>
+              </div>
 
-                <div className="space-y-5">
-                  <div className="bg-pink-50 border border-pink-100 rounded-3xl p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="font-bold text-gray-900">
-                          La Riche → Saint-Pierre des Corps
-                        </p>
-
-                        <p className="text-gray-500 text-sm">
-                          Départ 04:35
-                        </p>
-                      </div>
-
-                      <div className="bg-pink-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
-                        3 places
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-full bg-gradient-to-r from-pink-600 to-red-500 text-white flex items-center justify-center font-bold">
-                        N
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          Nicolas
-                        </p>
-
-                        <p className="text-sm text-gray-500">
-                          Technicentre Saint-Pierre des Corps
-                        </p>
-                      </div>
-                    </div>
+              <div className="mb-4 rounded-3xl border border-pink-100 bg-pink-50 p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-pink-600">
+                      Départ
+                    </p>
+                    <p className="font-bold">Votre secteur de résidence</p>
                   </div>
-
-                  <div className="bg-white border border-gray-200 rounded-3xl p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="font-bold text-gray-900">
-                          Tours → Saint-Pierre
-                        </p>
-
-                        <p className="text-gray-500 text-sm">
-                          Départ 07:10
-                        </p>
-                      </div>
-
-                      <div className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-semibold">
-                        1 place
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center font-bold">
-                        M
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          Mathieu
-                        </p>
-
-                        <p className="text-sm text-gray-500">
-                          Maintenance TER
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-900 rounded-3xl p-6 text-white">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-bold text-lg">
-                        Impact collectif
-                      </h3>
-
-                      <span className="text-3xl">
-                        🌱
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-5">
-                      <div>
-                        <p className="text-4xl font-black mb-2">
-                          -38%
-                        </p>
-
-                        <p className="text-sm text-gray-300">
-                          Réduction CO₂
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-4xl font-black mb-2">
-                          214€
-                        </p>
-
-                        <p className="text-sm text-gray-300">
-                          Économie moyenne
-                        </p>
-                      </div>
-                    </div>
+                  <span className="text-xl">→</span>
+                  <div className="text-right">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-pink-600">
+                      Arrivée
+                    </p>
+                    <p className="font-bold">Votre site de travail</p>
                   </div>
                 </div>
               </div>
+
+              {[
+                ["⏰", "Horaires compatibles", "Trouvez des trajets adaptés à vos horaires."],
+                ["👥", "Des collègues compatibles", "Retrouvez les personnes qui partagent vos contraintes."],
+                ["💬", "Échangez simplement", "Contactez votre collègue depuis la plateforme."],
+              ].map(([icon, title, text], index) => (
+                <div
+                  key={title}
+                  className={`mb-3 flex items-center gap-4 rounded-2xl border p-4 ${
+                    index === 2
+                      ? "border-gray-900 bg-gray-900 text-white"
+                      : "border-gray-200 bg-white"
+                  }`}
+                >
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xl">
+                    {icon}
+                  </div>
+                  <div>
+                    <p className="font-bold">{title}</p>
+                    <p className={`text-sm ${index === 2 ? "text-gray-300" : "text-gray-500"}`}>
+                      {text}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="mt-32">
-            <div className="text-center mb-16">
-              <p className="text-pink-600 font-bold uppercase tracking-widest mb-4">
-                Pourquoi EnVoiture ?
-              </p>
+      <section id="fonctionnement" className="bg-white">
+        <div className="mx-auto max-w-7xl px-6 py-24 lg:px-10">
+          <div className="mx-auto mb-16 max-w-3xl text-center">
+            <p className="mb-4 font-bold uppercase tracking-widest text-pink-600">
+              Comment ça marche ?
+            </p>
+            <h2 className="mb-6 text-4xl font-black lg:text-5xl">
+              Simple à utiliser, pensé pour votre quotidien.
+            </h2>
+            <p className="text-lg leading-relaxed text-gray-600 lg:text-xl">
+              De la création du trajet à la mise en relation avec un collègue,
+              EnVoiture accompagne chaque étape.
+            </p>
+          </div>
 
-              <h2 className="text-4xl lg:text-6xl font-black text-gray-900 mb-8">
-                Une plateforme pensée
-                <span className="bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent">
-                  {" "}
-                  pour les réalités SNCF
-                </span>
-              </h2>
-
-              <p className="max-w-3xl mx-auto text-xl text-gray-600 leading-relaxed">
-                Les solutions classiques ne prennent pas en compte
-                les contraintes des agents SNCF :
-                horaires décalés, prises de service tôt le matin,
-                variations de roulements et besoins locaux spécifiques.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="bg-white border border-gray-200 rounded-[36px] p-8 shadow-sm">
-                <div className="w-20 h-20 rounded-3xl bg-pink-100 flex items-center justify-center text-4xl mb-8">
-                  🚆
+          <div className="grid gap-8 md:grid-cols-3">
+            {[
+              ["01", "📝", "Créez votre trajet", "Indiquez votre départ, votre site de travail, vos horaires et les jours concernés."],
+              ["02", "🔎", "Trouvez un collègue", "Consultez les trajets compatibles avec vos contraintes et vos besoins."],
+              ["03", "💬", "Organisez-vous", "Échangez avec votre collègue et définissez ensemble les modalités du covoiturage."],
+            ].map(([number, icon, title, text]) => (
+              <div key={number} className="rounded-[30px] border border-gray-200 bg-gray-50 p-8">
+                <p className="mb-6 font-black text-pink-600">{number}</p>
+                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-pink-100 text-3xl">
+                  {icon}
                 </div>
-
-                <h3 className="text-2xl font-black text-gray-900 mb-5">
-                  Adapté aux horaires ferroviaires
-                </h3>
-
-                <p className="text-gray-600 leading-relaxed text-lg">
-                  EnVoiture permet de trouver facilement des collègues
-                  compatibles avec les prises de service tôt le matin,
-                  les horaires de nuit et les roulements spécifiques SNCF.
-                </p>
+                <h3 className="mb-4 text-2xl font-black">{title}</h3>
+                <p className="leading-relaxed text-gray-600">{text}</p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              <div className="bg-white border border-gray-200 rounded-[36px] p-8 shadow-sm">
-                <div className="w-20 h-20 rounded-3xl bg-red-100 flex items-center justify-center text-4xl mb-8">
-                  🤝
+      <section className="border-y border-gray-100 bg-gray-50">
+        <div className="mx-auto max-w-7xl px-6 py-24 lg:px-10">
+          <div className="mb-16 text-center">
+            <p className="mb-4 font-bold uppercase tracking-widest text-pink-600">
+              Pourquoi EnVoiture ?
+            </p>
+            <h2 className="mb-6 text-4xl font-black lg:text-5xl">
+              Une solution pensée pour les réalités SNCF.
+            </h2>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-3">
+            {[
+              ["🚆", "Horaires et prises de service", "Les horaires décalés, les prises de service tôt le matin et les contraintes de roulement font partie du quotidien."],
+              ["🤝", "Une communauté de collègues", "EnVoiture facilite les échanges entre agents partageant des contraintes professionnelles et des trajets similaires."],
+              ["🌱", "Une mobilité plus simple", "Partager les trajets domicile-travail peut réduire les coûts individuels et contribuer à une mobilité plus durable."],
+            ].map(([icon, title, text]) => (
+              <div key={title} className="rounded-[32px] border border-gray-200 bg-white p-8 shadow-sm">
+                <div className="mb-7 flex h-16 w-16 items-center justify-center rounded-2xl bg-pink-100 text-3xl">
+                  {icon}
                 </div>
-
-                <h3 className="text-2xl font-black text-gray-900 mb-5">
-                  Une communauté de confiance
-                </h3>
-
-                <p className="text-gray-600 leading-relaxed text-lg">
-                  Les trajets se font entre collègues partageant
-                  les mêmes contraintes professionnelles,
-                  les mêmes sites et les mêmes habitudes de déplacement.
-                </p>
+                <h3 className="mb-4 text-2xl font-black">{title}</h3>
+                <p className="leading-relaxed text-gray-600">{text}</p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              <div className="bg-white border border-gray-200 rounded-[36px] p-8 shadow-sm">
-                <div className="w-20 h-20 rounded-3xl bg-gray-100 flex items-center justify-center text-4xl mb-8">
-                  🌱
-                </div>
-
-                <h3 className="text-2xl font-black text-gray-900 mb-5">
-                  Moins de coûts, moins d'impact
-                </h3>
-
-                <p className="text-gray-600 leading-relaxed text-lg">
-                  Réduire les frais de carburant,
-                  limiter l'empreinte carbone
-                  et fluidifier les trajets quotidiens :
-                  une mobilité plus intelligente pour tous.
+      <section className="bg-white">
+        <div className="mx-auto max-w-5xl px-6 py-24 lg:px-10">
+          <div className="rounded-[40px] bg-gray-900 p-8 text-white sm:p-12 lg:p-16">
+            <div className="flex flex-col gap-8 sm:flex-row">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-3xl">
+                🔒
+              </div>
+              <div>
+                <p className="mb-4 font-bold uppercase tracking-widest text-pink-300">
+                  Confidentialité
+                </p>
+                <h2 className="mb-5 text-3xl font-black lg:text-4xl">
+                  Vos informations restent sous votre contrôle.
+                </h2>
+                <p className="text-lg leading-relaxed text-gray-300">
+                  EnVoiture limite les informations personnelles exposées aux
+                  autres utilisateurs. Les informations précises nécessaires au
+                  covoiturage sont destinées à rester dans le cadre des échanges
+                  entre personnes concernées.
                 </p>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      <section className="bg-gradient-to-br from-pink-50 via-white to-red-50">
+        <div className="mx-auto max-w-4xl px-6 py-24 text-center">
+          <p className="mb-4 font-bold uppercase tracking-widest text-pink-600">
+            EnVoiture
+          </p>
+          <h2 className="mb-6 text-4xl font-black lg:text-5xl">
+            Prêt à partager vos trajets ?
+          </h2>
+          <p className="mx-auto mb-9 max-w-2xl text-lg leading-relaxed text-gray-600">
+            Retrouvez vos collègues et simplifiez vos déplacements
+            domicile-travail.
+          </p>
+          <Link
+            href="/dashboard"
+            className="inline-flex rounded-2xl bg-gradient-to-r from-pink-600 to-red-500 px-8 py-4 text-lg font-bold text-white shadow-xl shadow-pink-200 transition hover:scale-[1.02]"
+          >
+            Accéder à EnVoiture
+          </Link>
+        </div>
+      </section>
+
+      <footer className="bg-gray-950 px-6 py-8 text-center text-sm text-gray-400">
+        EnVoiture — Covoiturage entre agents SNCF
+      </footer>
     </main>
   );
 }
