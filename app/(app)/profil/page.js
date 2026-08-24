@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -13,6 +14,9 @@ import {
 } from "@/components/providers/AuthProvider";
 
 import { supabase } from "@/lib/supabase";
+import { containsForbiddenPresentationTerm } from "@/lib/profanity";
+
+const PRESENTATION_MAX_LENGTH = 500;
 
 export default function ProfilePage() {
   const {
@@ -71,7 +75,12 @@ export default function ProfilePage() {
     useState(false);
 
   const [message, setMessage] =
-    useState("");
+    useState("")
+
+  const [presentationError, setPresentationError] =
+    useState("")
+
+  const presentationRef = useRef(null);
 
   const [vehicleMessage, setVehicleMessage] =
     useState("");
@@ -106,6 +115,7 @@ export default function ProfilePage() {
         last_name: "",
         city: "",
         photo: "",
+        presentation: "",
         site_travail_id: null,
       });
 
@@ -193,6 +203,9 @@ export default function ProfilePage() {
       photo:
         profile.photo ?? "",
 
+      presentation:
+        profile.presentation ?? "",
+
       site_travail_id:
         profile.site_travail_id ?? null,
     });
@@ -201,6 +214,33 @@ export default function ProfilePage() {
       setLoadingResidence(true);
       setLoadingPreferences(true);
       setLoadingVehicles(true);
+
+      /*
+       * -----------------------------------------------
+       * PRÉSENTATION
+       * -----------------------------------------------
+       */
+
+      const {
+        data: profileData,
+        error: profileDataError,
+      } = await supabase
+        .from("profils")
+        .select("presentation")
+        .eq("utilisateur_id", profile.id)
+        .maybeSingle();
+
+      if (profileDataError) {
+        console.error(
+          "Erreur lors du chargement de la présentation :",
+          profileDataError
+        );
+      } else {
+        setFormData((current) => ({
+          ...current,
+          presentation: profileData?.presentation ?? "",
+        }));
+      }
 
       /*
        * -----------------------------------------------
@@ -704,6 +744,36 @@ export default function ProfilePage() {
         return;
       }
 
+      const presentation =
+        (formData.presentation || "").trim();
+
+      if (presentation.length > PRESENTATION_MAX_LENGTH) {
+        setMessage(
+          `Votre présentation ne peut pas dépasser ${PRESENTATION_MAX_LENGTH} caractères.`
+        );
+
+        return;
+      }
+
+      if (containsForbiddenPresentationTerm(presentation)) {
+        const errorMessage =
+          "Votre présentation contient un terme qui ne peut pas être utilisé. Merci de la reformuler.";
+
+        setMessage("");
+        setPresentationError(errorMessage);
+
+        requestAnimationFrame(() => {
+          presentationRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        });
+
+        return;
+      }
+
+      setPresentationError("");
+
       /*
        * -----------------------------------------------
        * GÉOCODAGE DE LA RÉSIDENCE
@@ -744,6 +814,9 @@ export default function ProfilePage() {
 
             photo:
               formData.photo || null,
+
+            presentation:
+              presentation || null,
           })
           .eq(
             "utilisateur_id",
@@ -786,6 +859,9 @@ export default function ProfilePage() {
 
             photo:
               formData.photo || null,
+
+            presentation:
+              presentation || null,
 
             site_travail_id:
               Number(
@@ -1640,6 +1716,69 @@ export default function ProfilePage() {
               L'adresse e-mail est gérée par
               l'authentification Supabase.
             </p>
+
+          </div>
+
+          {/* ------------------------------------------ */}
+          {/* PRÉSENTATION                              */}
+          {/* ------------------------------------------ */}
+
+          <div
+            ref={presentationRef}
+            className="border-t border-gray-100 pt-8"
+          >
+
+            <div className="flex items-end justify-between gap-4 mb-2">
+              <label
+                htmlFor="presentation"
+                className="block text-xl font-bold text-gray-900"
+              >
+                👋 Présentation
+              </label>
+
+              <span className="text-xs text-gray-400">
+                {formData.presentation?.length || 0} / {PRESENTATION_MAX_LENGTH}
+              </span>
+            </div>
+
+            <p className="text-sm text-gray-500 mb-4">
+              Quelques mots pour vous présenter aux autres utilisateurs.
+            </p>
+
+            <textarea
+              id="presentation"
+              value={formData.presentation || ""}
+              onChange={(e) => {
+                const value = e.target.value.slice(
+                  0,
+                  PRESENTATION_MAX_LENGTH
+                );
+
+                setPresentationError("");
+
+                updateField(
+                  "presentation",
+                  value
+                );
+              }}
+              maxLength={PRESENTATION_MAX_LENGTH}
+              rows={5}
+              placeholder="Quelques mots sur vous, vos habitudes de trajet ou ce que vous recherchez..."
+              className="w-full border border-gray-200 rounded-2xl px-5 py-4 resize-y"
+            />
+
+            <p className="text-xs text-gray-500 mt-2">
+              Cette présentation est facultative. Évitez d'y indiquer votre adresse ou des coordonnées personnelles.
+            </p>
+
+            {presentationError && (
+              <div
+                role="alert"
+                className="mt-4 rounded-2xl border-2 border-red-200 bg-red-50 px-5 py-4 text-lg font-semibold leading-relaxed text-red-700"
+              >
+                {presentationError}
+              </div>
+            )}
 
           </div>
 
