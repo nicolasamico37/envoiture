@@ -55,6 +55,12 @@ const sections = [
           answer:
             "EnVoiture facilite la mise en relation entre utilisateurs, mais n'est pas partie au trajet organisé entre eux. Les utilisateurs restent responsables de l'organisation concrète du covoiturage, du respect des règles applicables et des comportements adoptés lors de leurs échanges et déplacements. Les conditions d'utilisation du service préciseront les responsabilités respectives de chacun.",
         },
+      {
+        question: "Quelle est la responsabilité des utilisateurs et d'EnVoiture ?",
+        answer:
+          "EnVoiture est un outil interne destiné à faciliter la mise en relation entre agents SNCF souhaitant organiser un covoiturage. EnVoiture facilite cette mise en relation mais n'est pas partie au covoiturage organisé entre les utilisateurs. Chaque utilisateur reste responsable de ses échanges, de ses décisions et de son comportement, avant, pendant et après le trajet. Les utilisateurs s'engagent à utiliser le service de manière respectueuse, loyale et conforme aux règles applicables. Les informations communiquées dans EnVoiture doivent être utilisées uniquement dans le cadre prévu par le service. EnVoiture ne peut pas garantir le comportement d'un utilisateur, la réalisation d'un trajet ou les conditions dans lesquelles un covoiturage est organisé. En cas de comportement inapproprié, de non-respect des règles ou de problème rencontré avec un autre utilisateur, un signalement peut être effectué depuis le service.",
+      },
+
         {
           question: "Qui a développé EnVoiture ?",
           answer:
@@ -393,7 +399,6 @@ const sections = [
 
 export default function HelpPage() {
   const [search, setSearch] = useState("");
-  const [openQuestion, setOpenQuestion] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
 
   const normalizedSearch = search.trim().toLowerCase();
@@ -427,26 +432,18 @@ export default function HelpPage() {
     0
   );
 
-  function toggleQuestion(sectionId, questionIndex) {
-    const id = `${sectionId}-${questionIndex}`;
-
-    setOpenQuestion((current) => (current === id ? null : id));
-  }
 
   function selectSection(sectionId) {
     setSelectedSection(sectionId);
-    setOpenQuestion(null);
   }
 
   function resetNavigation() {
     setSelectedSection(null);
-    setOpenQuestion(null);
   }
 
   function clearSearch() {
     setSearch("");
     setSelectedSection(null);
-    setOpenQuestion(null);
   }
 
   return (
@@ -476,8 +473,7 @@ export default function HelpPage() {
                 onChange={(event) => {
                   setSearch(event.target.value);
                   setSelectedSection(null);
-                  setOpenQuestion(null);
-                }}
+                              }}
                 placeholder="Rechercher dans l'aide..."
                 className="w-full bg-white text-gray-900 placeholder:text-gray-400 rounded-2xl px-12 py-4 outline-none border-2 border-white/30 focus:border-white"
               />
@@ -606,38 +602,19 @@ export default function HelpPage() {
                     <div className="space-y-3">
                       {section.questions.map((item, index) => {
                         const questionId = `${section.id}-${index}`;
-                        const isOpen = openQuestion === questionId;
 
                         return (
                           <div
                             key={questionId}
-                            className="border border-gray-200 rounded-2xl overflow-hidden bg-white"
+                            className="border border-gray-200 rounded-2xl bg-white p-5"
                           >
-                            <button
-                              type="button"
-                              onClick={() =>
-                                toggleQuestion(section.id, index)
-                              }
-                              aria-expanded={isOpen}
-                              className="w-full flex items-center justify-between gap-4 text-left px-5 py-5 hover:bg-gray-50 transition"
-                            >
-                              <span className="font-semibold text-gray-900">
-                                {item.question}
-                              </span>
+                            <div className="font-semibold text-gray-900">
+                              {item.question}
+                            </div>
 
-                              <span
-                                aria-hidden="true"
-                                className="text-xl text-gray-500 shrink-0"
-                              >
-                                {isOpen ? "−" : "+"}
-                              </span>
-                            </button>
-
-                            {isOpen && (
-                              <div className="px-5 pb-5 text-gray-600 leading-relaxed border-t border-gray-100 pt-4">
-                                {item.answer}
-                              </div>
-                            )}
+                            <div className="mt-3 text-gray-600 leading-relaxed">
+                              {item.answer}
+                            </div>
                           </div>
                         );
                       })}
