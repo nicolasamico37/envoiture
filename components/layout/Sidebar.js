@@ -29,6 +29,18 @@ const links = [
   },
 
   {
+    href: "/profil",
+    label: "Mon profil",
+    icon: "🙍",
+  },
+
+  {
+    href: "/preferences",
+    label: "Mes préférences",
+    icon: "⚙️",
+  },
+
+  {
     href: "/trajets",
     label: "Trajets",
     icon: "🚗",
@@ -36,7 +48,7 @@ const links = [
 
   {
     href: "/profils",
-    label: "Profils",
+    label: "Profils compatibles",
     icon: "👥",
   },
 
@@ -50,18 +62,6 @@ const links = [
     href: "/statistiques",
     label: "Statistiques",
     icon: "📊",
-  },
-
-  {
-    href: "/profil",
-    label: "Mon profil",
-    icon: "🙍",
-  },
-
-  {
-    href: "/preferences",
-    label: "Préférences",
-    icon: "⚙️",
   },
 
   {
