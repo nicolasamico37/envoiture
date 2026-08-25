@@ -11,61 +11,46 @@ const sections = [
       icon: "ℹ️",
       questions: [
         {
-          question: "Pourquoi EnVoiture a-t-il été créé ?",
-          answer:
-            "Dans les établissements SNCF, de nombreux agents effectuent quotidiennement des trajets similaires, parfois avec des horaires décalés. Certains collègues se croisent ou empruntent les mêmes routes sans savoir qu'ils pourraient covoiturer ensemble. EnVoiture a été pensé pour faciliter cette mise en relation dans un environnement interne, adapté aux contraintes des agents SNCF.",
-        },
+                  question: "Pourquoi EnVoiture a-t-il été créé ?",
+                  answer:
+                    "Dans les établissements SNCF, de nombreux agents effectuent quotidiennement des trajets similaires, parfois avec des horaires décalés. Certains collègues se croisent ou empruntent les mêmes routes sans savoir qu'ils pourraient covoiturer ensemble. EnVoiture a été pensé pour faciliter cette mise en relation dans un environnement interne, adapté aux contraintes des agents SNCF.",
+                },
         {
-          question: "Quel est le principe d'EnVoiture ?",
-          answer:
-            "EnVoiture est une plateforme interne de mise en relation pour le covoiturage entre agents SNCF. Elle permet de déclarer ses habitudes de déplacement, de trouver des collègues dont les trajets sont compatibles et de prendre contact afin d'organiser ensuite le covoiturage.",
-        },
+                  question: "Quel est le principe d'EnVoiture ?",
+                  answer:
+                    "EnVoiture est une plateforme interne de mise en relation pour le covoiturage entre agents SNCF. Elle permet de déclarer ses habitudes de déplacement, de trouver des collègues dont les trajets sont compatibles et de prendre contact afin d'organiser ensuite le covoiturage.",
+                },
         {
-          question: "Quels sont les trois principes fondamentaux d'EnVoiture ?",
-          answer:
-            "EnVoiture repose sur trois principes : la confiance, la confidentialité et le consentement. La confiance vient d'un service destiné aux agents SNCF. La confidentialité repose notamment sur la limitation des informations personnelles exposées, sans affichage public des adresses exactes ni géolocalisation en temps réel. Le consentement signifie que chacun conserve le contrôle de ses échanges et des informations qu'il choisit de partager.",
-        },
+                  question: "Quels sont les trois principes fondamentaux d'EnVoiture ?",
+                  answer:
+                    "EnVoiture repose sur trois principes : la confiance, la confidentialité et le consentement. La confiance vient d'un service destiné aux agents SNCF. La confidentialité repose notamment sur la limitation des informations personnelles exposées, sans affichage public des adresses exactes ni géolocalisation en temps réel. Le consentement signifie que chacun conserve le contrôle de ses échanges et des informations qu'il choisit de partager.",
+                },
         {
-          question: "En quoi EnVoiture crée-t-il du lien entre collègues ?",
-          answer:
-            "EnVoiture ne sert pas uniquement à partager une voiture. Il permet aussi à des collègues qui se croisent quotidiennement, travaillent dans le même établissement ou effectuent des trajets similaires de se trouver et d'échanger. Le covoiturage peut ainsi favoriser l'entraide et créer du lien entre collègues.",
-        },
+                  question: "En quoi EnVoiture crée-t-il du lien entre collègues ?",
+                  answer:
+                    "EnVoiture ne sert pas uniquement à partager une voiture. Il permet aussi à des collègues qui se croisent quotidiennement, travaillent dans le même établissement ou effectuent des trajets similaires de se trouver et d'échanger. Le covoiturage peut ainsi favoriser l'entraide et créer du lien entre collègues.",
+                },
         {
-          question: "Quels sont les avantages pour les agents ?",
-          answer:
-            "Le covoiturage peut permettre de réduire les dépenses liées aux trajets domicile-travail, de diminuer la fatigue liée aux déplacements, de simplifier l'organisation des trajets et de favoriser l'entraide et le lien entre collègues.",
-        },
+                  question: "Quels sont les avantages pour les agents ?",
+                  answer:
+                    "Le covoiturage peut permettre de réduire les dépenses liées aux trajets domicile-travail, de diminuer la fatigue liée aux déplacements, de simplifier l'organisation des trajets et de favoriser l'entraide et le lien entre collègues.",
+                },
         {
-          question: "Quels sont les avantages pour l'établissement ?",
-          answer:
-            "EnVoiture peut contribuer à réduire le nombre de véhicules utilisés pour les trajets domicile-travail, à diminuer la pression sur les parkings, à réduire l'empreinte carbone des déplacements et à améliorer la qualité de vie liée aux trajets domicile-travail.",
-        },
+                  question: "Quels sont les avantages pour l'établissement ?",
+                  answer:
+                    "EnVoiture peut contribuer à réduire le nombre de véhicules utilisés pour les trajets domicile-travail, à diminuer la pression sur les parkings, à réduire l'empreinte carbone des déplacements et à améliorer la qualité de vie liée aux trajets domicile-travail.",
+                },
         {
-          question: "EnVoiture est-il un service commercial ?",
-          answer:
-            "Non. EnVoiture est conçu comme un outil communautaire et non lucratif destiné aux agents SNCF. Le service n'a pas vocation à mettre en place de commission ou de transaction financière entre les utilisateurs.",
-        },
-        {
-          question: "Quelle est la responsabilité des utilisateurs ?",
-          answer:
-            "EnVoiture est un outil de mise en relation. Chaque utilisateur reste responsable de son comportement, de ses échanges avec les autres utilisateurs et des décisions prises dans le cadre d'un covoiturage. Les informations et les mises en relation proposées par le service ne dispensent pas chacun d'agir avec prudence, respect et discernement.",
-        },
-        {
-          question: "EnVoiture est-il responsable du covoiturage lui-même ?",
-          answer:
-            "EnVoiture facilite la mise en relation entre utilisateurs, mais n'est pas partie au trajet organisé entre eux. Les utilisateurs restent responsables de l'organisation concrète du covoiturage, du respect des règles applicables et des comportements adoptés lors de leurs échanges et déplacements. Les conditions d'utilisation du service préciseront les responsabilités respectives de chacun.",
-        },
-      {
-        question: "Quelle est la responsabilité des utilisateurs et d'EnVoiture ?",
-        answer:
-          "EnVoiture est un outil interne destiné à faciliter la mise en relation entre agents SNCF souhaitant organiser un covoiturage. EnVoiture facilite cette mise en relation mais n'est pas partie au covoiturage organisé entre les utilisateurs. Chaque utilisateur reste responsable de ses échanges, de ses décisions et de son comportement, avant, pendant et après le trajet. Les utilisateurs s'engagent à utiliser le service de manière respectueuse, loyale et conforme aux règles applicables. Les informations communiquées dans EnVoiture doivent être utilisées uniquement dans le cadre prévu par le service. EnVoiture ne peut pas garantir le comportement d'un utilisateur, la réalisation d'un trajet ou les conditions dans lesquelles un covoiturage est organisé. En cas de comportement inapproprié, de non-respect des règles ou de problème rencontré avec un autre utilisateur, un signalement peut être effectué depuis le service.",
-      },
+                  question: "EnVoiture est-il un service commercial ?",
+                  answer:
+                    "Non. EnVoiture est conçu comme un outil communautaire et non lucratif destiné aux agents SNCF. Le service n'a pas vocation à mettre en place de commission ou de transaction financière entre les utilisateurs.",
+                },
 
         {
-          question: "Qui a développé EnVoiture ?",
-          answer:
-            "EnVoiture est développé par Nicolas AMICO, agent du Technicentre Industriel de Saint-Pierre-des-Corps.",
-        },
+                  question: "Qui a développé EnVoiture ?",
+                  answer:
+                    "EnVoiture est développé par Nicolas AMICO, agent du Technicentre Industriel de Saint-Pierre-des-Corps.",
+                }
       ],
     },
 
@@ -326,6 +311,26 @@ const sections = [
         },
       ],
     },
+
+  {
+    id: "responsabilites",
+    title: "Responsabilités",
+    icon: "⚖️",
+    questions: [
+      {
+        question: "Quelle est la responsabilité des utilisateurs ?",
+        answer:
+          "Chaque utilisateur reste responsable de ses échanges, de ses décisions et de son comportement, avant, pendant et après le trajet. Les utilisateurs s'engagent à utiliser le service de manière respectueuse, loyale et conforme aux règles applicables. Les informations communiquées dans EnVoiture doivent être utilisées uniquement dans le cadre prévu par le service.",
+      },
+      {
+        question: "EnVoiture est-il responsable du covoiturage lui-même ?",
+        answer:
+          "EnVoiture facilite la mise en relation entre utilisateurs, mais n'est pas partie au trajet organisé entre eux. Les utilisateurs restent responsables de l'organisation concrète du covoiturage, du respect des règles applicables et des comportements adoptés lors de leurs échanges et déplacements. Les conditions d'utilisation du service préciseront les responsabilités respectives de chacun. EnVoiture ne peut pas garantir le comportement d'un utilisateur, la réalisation d'un trajet ou les conditions dans lesquelles un covoiturage est organisé. En cas de comportement inapproprié, de non-respect des règles ou de problème rencontré avec un autre utilisateur, un signalement peut être effectué depuis le service.",
+      },
+    ],
+  },
+
+
 
   {
       id: "statistiques",
