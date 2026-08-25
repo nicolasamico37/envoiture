@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.110.9",
     "french-badwords-list": "^1.0.7",
     "next": "16.2.6",
