@@ -422,13 +422,13 @@ export default function TopHeader() {
             <Image
               src="/logo-text.png"
               alt="EnVoiture"
-              width={320}
-              height={80}
+              width={896}
+              height={284}
               style={{
                 width: "auto",
                 height: "auto",
               }}
-              className="max-w-[220px] lg:max-w-[320px]"
+              className="h-[58px] lg:h-[70px] w-auto max-w-[220px] lg:max-w-[240px] object-contain"
               priority
             />
           </Link>
