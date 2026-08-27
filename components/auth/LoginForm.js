@@ -69,7 +69,9 @@ export default function LoginForm() {
           password,
         });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       router.push("/dashboard");
       router.refresh();
@@ -198,6 +200,21 @@ export default function LoginForm() {
                     />
                   </svg>
                 )}
+              </button>
+            </div>
+
+            {/* Mot de passe oublié */}
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    "/mot-de-passe-oublie"
+                  )
+                }
+                className="text-sm text-pink-600 hover:text-pink-700 hover:underline"
+              >
+                J'ai oublié mon mot de passe
               </button>
             </div>
           </>
