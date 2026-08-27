@@ -27,7 +27,7 @@ export async function POST(request) {
       );
     }
 
-    // Recherche du compte correspondant au CP
+    // Recherche du compte EnVoiture correspondant au CP
     const { data: utilisateur, error: utilisateurError } =
       await supabaseAdmin
         .from("utilisateurs")
@@ -51,25 +51,84 @@ export async function POST(request) {
     }
 
     /*
-     * Même si aucun compte n'est trouvé, on renvoie
-     * une réponse neutre afin de ne pas révéler
-     * l'existence d'un compte associé à un CP.
+     * Si aucun compte EnVoiture ne correspond au CP,
+     * on renvoie volontairement une réponse neutre.
      */
-    if (!utilisateur?.email_professionnel) {
+    if (!utilisateur) {
       return NextResponse.json({
         success: true,
         message:
-          "Si un compte correspondant existe, un e-mail de réinitialisation a été envoyé à l'adresse professionnelle associée à votre numéro de CP.",
+          "Si un compte correspondant existe, un e-mail de réinitialisation a été envoyé.",
       });
     }
 
-    const emailProfessionnel =
-      utilisateur.email_professionnel;
+    /*
+     * On récupère maintenant l'utilisateur directement
+     * dans Supabase Auth grâce à son identifiant.
+     *
+     * Cela permet de prendre en charge :
+     * - les anciens comptes créés avant le système CP ;
+     * - les nouveaux comptes créés avec leur adresse professionnelle.
+     */
+    const {
+      data: authUserData,
+      error: authUserError,
+    } = await supabaseAdmin.auth.admin.getUserById(
+      utilisateur.id
+    );
 
-    // Envoi de l'e-mail de réinitialisation
+    if (authUserError) {
+      console.error(
+        "Erreur recherche utilisateur Auth :",
+        authUserError
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Impossible de retrouver votre compte d'authentification.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const authUser = authUserData?.user;
+
+    if (!authUser?.email) {
+      console.error(
+        "Utilisateur Auth sans adresse e-mail :",
+        utilisateur.id
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "Aucune adresse e-mail n'est associée à ce compte.",
+        },
+        { status: 500 }
+      );
+    }
+
+    /*
+     * On utilise l'adresse réellement enregistrée
+     * dans Supabase Auth.
+     *
+     * Pour ton ancien compte, ce sera donc :
+     * nicolasamico37@gmail.com
+     *
+     * Pour un nouveau compte SNCF, ce sera son adresse
+     * professionnelle enregistrée dans Auth.
+     */
+    const emailAuth = authUser.email;
+
+    console.log(
+      "Demande de réinitialisation pour :",
+      emailAuth
+    );
+
     const { error: resetError } =
       await supabaseAdmin.auth.resetPasswordForEmail(
-        emailProfessionnel,
+        emailAuth,
         {
           redirectTo:
             "https://www.envoiture-app.com/reinitialiser-mot-de-passe",
@@ -94,7 +153,7 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       message:
-        "Si un compte correspondant existe, un e-mail de réinitialisation a été envoyé à l'adresse professionnelle associée à votre numéro de CP.",
+        "Si un compte correspondant existe, un e-mail de réinitialisation a été envoyé.",
     });
   } catch (error) {
     console.error(
