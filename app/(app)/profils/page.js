@@ -521,12 +521,6 @@ export default function ProfilesPage() {
           </div>
         </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-5 mb-8">
-            {error}
-          </div>
-        )}
-
         {!error &&
           filteredProfiles.length ===
             0 && (
@@ -540,10 +534,17 @@ export default function ProfilesPage() {
               </h2>
 
               <p className="text-gray-500 max-w-xl mx-auto">
-                Nous rechercherons automatiquement
-                les collègues dont les trajets,
-                les jours et les horaires sont
-                compatibles avec les vôtres.
+                Nous n'avons pas encore trouvé de
+                collègue dont les trajets, les jours
+                et les horaires sont compatibles
+                avec les vôtres.
+              </p>
+
+              <p className="text-gray-500 max-w-xl mx-auto mt-3">
+                De nouveaux collègues peuvent rejoindre
+                EnVoiture à tout moment. Revenez
+                régulièrement pour découvrir de nouvelles
+                possibilités de covoiturage !
               </p>
             </div>
           )}
