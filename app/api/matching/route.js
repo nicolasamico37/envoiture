@@ -603,6 +603,14 @@ export async function GET(request) {
                   .residence_longitude,
             }
           );
+
+        console.log(
+          "DISTANCE DOMICILE",
+          candidate.utilisateur_id,
+          candidate.prenom,
+          candidate.nom,
+          homeDistanceKm
+      );  
       }
 
       /*
