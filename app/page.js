@@ -17,10 +17,11 @@ export default function HomePage() {
             />
 
             <div className="mt-8">
-              <p className="text-lg font-medium text-gray-800 sm:text-xl">
+              <p className="text-xl font-medium text-gray-800 sm:text-2xl">
                 Développé par Nicolas AMICO
               </p>
-              <p className="mt-1 text-base text-gray-500 sm:text-lg">
+
+              <p className="mt-1 text-lg text-gray-500 sm:text-xl">
                 Technicentre Industriel de Saint-Pierre-des-Corps
               </p>
             </div>
@@ -40,7 +41,7 @@ export default function HomePage() {
             alt="SNCF Voyageurs"
             width={240}
             height={80}
-            className="h-auto w-[150px] sm:w-[180px]"
+            className="h-auto w-[130px] sm:w-[160px]"
           />
         </footer>
       </div>
