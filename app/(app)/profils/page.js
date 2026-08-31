@@ -327,15 +327,11 @@ export default function ProfilesPage() {
       return "Domiciles proches";
     }
 
-    if (distanceKm <= 2) {
+    if (distanceKm <= 1.5) {
       return "Domiciles assez proches";
     }
 
-    if (distanceKm <= 3) {
-      return "Domiciles relativement proches";
-    }
-
-    if (distanceKm <= 4) {
+    if (distanceKm <= 2) {
       return "Domiciles dans le même secteur";
     }
 

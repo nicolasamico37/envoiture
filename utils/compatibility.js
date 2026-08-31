@@ -269,11 +269,13 @@ function getCompatibleDays(
  * Maximum : 25 points
  *
  * ≤ 0,5 km : 25
- * ≤ 1 km   : 22
- * ≤ 2 km   : 18
- * ≤ 3 km   : 12
- * ≤ 4 km   : 6
- * > 4 km   : 0
+ * ≤ 1 km   : 20
+ * ≤ 1,5 km : 15
+ * ≤ 2 km   : 10
+ * > 2 km   : 0
+ *
+ * Au-delà de 2 km, le profil est exclu du matching
+ * par l'API /api/matching.
  */
 
 function calculateDistanceScore(
@@ -296,19 +298,15 @@ function calculateDistanceScore(
   }
 
   if (distance <= 1) {
-    return 22;
+    return 20;
+  }
+
+  if (distance <= 1.5) {
+    return 15;
   }
 
   if (distance <= 2) {
-    return 18;
-  }
-
-  if (distance <= 3) {
-    return 12;
-  }
-
-  if (distance <= 4) {
-    return 6;
+    return 10;
   }
 
   return 0;

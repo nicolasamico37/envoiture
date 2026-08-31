@@ -533,34 +533,13 @@ export async function GET(request) {
 
       /*
        * -----------------------------------------------
-       * COMPATIBILITÉ DE BASE
-       * -----------------------------------------------
-       */
-
-      const compatibility =
-        calculateCompatibilityBase(
-          currentUser,
-          otherUser
-        );
-
-      /*
-       * Aucun jour compatible :
-       * pas de match.
-       */
-
-      if (
-        compatibility.score === 0 ||
-        compatibility
-          .compatibleDays
-          .length === 0
-      ) {
-        continue;
-      }
-
-      /*
-       * -----------------------------------------------
        * DISTANCE ENTRE LES DOMICILES
        * -----------------------------------------------
+       *
+       * La distance est calculée à vol d'oiseau.
+       *
+       * Au-delà de 2 km :
+       * pas de compatibilité.
        *
        * Les coordonnées restent côté serveur.
        * Elles ne sont jamais renvoyées au navigateur.
@@ -610,7 +589,45 @@ export async function GET(request) {
           candidate.prenom,
           candidate.nom,
           homeDistanceKm
-      );  
+        );
+      }
+
+      /*
+       * Au-delà de 2 km à vol d'oiseau,
+       * le profil n'est pas considéré comme compatible.
+       */
+
+      if (
+        homeDistanceKm !== null &&
+        homeDistanceKm > 2
+      ) {
+        continue;
+      }
+
+      /*
+       * -----------------------------------------------
+       * COMPATIBILITÉ DE BASE
+       * -----------------------------------------------
+       */
+
+      const compatibility =
+        calculateCompatibilityBase(
+          currentUser,
+          otherUser
+        );
+
+      /*
+       * Aucun jour compatible :
+       * pas de match.
+       */
+
+      if (
+        compatibility.score === 0 ||
+        compatibility
+          .compatibleDays
+          .length === 0
+      ) {
+        continue;
       }
 
       /*
