@@ -266,12 +266,12 @@ function getCompatibleDays(
  * SCORE DE PROXIMITÉ DES RÉSIDENCES
  * --------------------------------------------------
  *
- * Maximum : 25 points
+ * Maximum : 30 points
  *
- * ≤ 0,5 km : 25
- * ≤ 1 km   : 20
- * ≤ 1,5 km : 15
- * ≤ 2 km   : 10
+ * ≤ 0,5 km : 30
+ * ≤ 1 km   : 24
+ * ≤ 1,5 km : 18
+ * ≤ 2 km   : 12
  * > 2 km   : 0
  *
  * Au-delà de 2 km, le profil est exclu du matching
@@ -294,25 +294,31 @@ function calculateDistanceScore(
     Number(distanceKm);
 
   if (distance <= 0.5) {
-    return 25;
+    return 30;
   }
 
   if (distance <= 1) {
-    return 20;
+    return 24;
   }
 
   if (distance <= 1.5) {
-    return 15;
+    return 18;
   }
 
   if (distance <= 2) {
-    return 10;
+    return 12;
   }
 
   return 0;
 }
 
 /*
+ * --------------------------------------------------
+ * SCORE FINAL
+ * --------------------------------------------------
+ */
+
+export function calculateCompatibilityBase(/*
  * --------------------------------------------------
  * SCORE FINAL
  * --------------------------------------------------
@@ -341,7 +347,6 @@ export function calculateCompatibilityBase(
       score: 0,
 
       sameDestination: false,
-      sameSector: false,
       roleCompatible: false,
 
       commonDays: [],
@@ -352,7 +357,6 @@ export function calculateCompatibilityBase(
       daysScore: 0,
       departureScore: 0,
       roleScore: 0,
-      sectorScore: 0,
     };
   }
 
@@ -373,25 +377,6 @@ export function calculateCompatibilityBase(
   const siteScore =
     sameDestination
       ? 20
-      : 0;
-
-  /*
-   * ------------------------------------------------
-   * MÊME SECTEUR — 5 POINTS
-   * ------------------------------------------------
-   */
-
-  const sameSector =
-    Boolean(
-      currentUser?.sector &&
-        otherUser?.sector &&
-        currentUser.sector ===
-          otherUser.sector
-    );
-
-  const sectorScore =
-    sameSector
-      ? 5
       : 0;
 
   /*
@@ -463,7 +448,6 @@ export function calculateCompatibilityBase(
       score: 0,
 
       sameDestination,
-      sameSector,
       roleCompatible,
 
       commonDays,
@@ -474,7 +458,6 @@ export function calculateCompatibilityBase(
       daysScore: 0,
       departureScore: 0,
       roleScore,
-      sectorScore,
     };
   }
 
@@ -599,14 +582,12 @@ export function calculateCompatibilityBase(
     siteScore +
     daysScore +
     departureScore +
-    roleScore +
-    sectorScore;
+    roleScore;
 
   return {
     score,
 
     sameDestination,
-    sameSector,
     roleCompatible,
 
     commonDays,
@@ -617,7 +598,6 @@ export function calculateCompatibilityBase(
     daysScore,
     departureScore,
     roleScore,
-    sectorScore,
   };
 }
 
@@ -660,8 +640,8 @@ export function calculateHomeDistance(
  * SCORE FINAL
  * --------------------------------------------------
  *
- * 75 points de compatibilité générale
- * + 25 points de proximité du domicile
+ * 70 points de compatibilité générale
+ * + 30 points de proximité du domicile
  *
  * Maximum : 100
  */

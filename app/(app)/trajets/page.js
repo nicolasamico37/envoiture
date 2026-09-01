@@ -1601,8 +1601,8 @@ const todayString =
             selectedVehicle.id,
 
           secteur_depart:
-            profileData?.secteur ||
-            "Secteur de résidence",
+            profile?.residence?.ville ||
+            "Ville de résidence",
 
           secteur_arrivee:
             profileData?.site_travail_id
@@ -2080,8 +2080,8 @@ const todayString =
               selectedMultipleVehicle.id,
 
             secteur_depart:
-              profileData?.secteur ||
-              "Secteur de résidence",
+              profile?.residence?.ville ||
+              "Ville de résidence",
 
             secteur_arrivee:
               profileData?.site_travail_id

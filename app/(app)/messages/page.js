@@ -124,8 +124,7 @@ export default function MessagesPage() {
             `
               utilisateur_id,
               prenom,
-              nom,
-              secteur
+              nom
             `
           )
           .in(
@@ -140,6 +139,36 @@ export default function MessagesPage() {
         const profileMap =
           Object.fromEntries(
             (profileRows || []).map(
+              (item) => [
+                item.utilisateur_id,
+                item,
+              ]
+            )
+          );
+
+        const {
+          data: residenceRows,
+          error: residencesError,
+        } = await supabase
+          .from("residences_privees")
+          .select(
+            `
+              utilisateur_id,
+              ville
+            `
+          )
+          .in(
+            "utilisateur_id",
+            uniqueUserIds
+          );
+
+        if (residencesError) {
+          throw residencesError;
+        }
+
+        const residenceMap =
+          Object.fromEntries(
+            (residenceRows || []).map(
               (item) => [
                 item.utilisateur_id,
                 item,
@@ -262,6 +291,11 @@ export default function MessagesPage() {
                   otherUserId
                 ];
 
+              const otherResidence =
+                residenceMap[
+                  otherUserId
+                ];
+
               const trip =
                 conversation.trajet_id
                   ? tripMap[
@@ -296,10 +330,10 @@ export default function MessagesPage() {
                     trip.secteur_arrivee || ""
                   }`.trim();
               } else if (
-                otherProfile?.secteur
+                otherResidence?.ville
               ) {
                 location =
-                  otherProfile.secteur;
+                  otherResidence.ville;
               }
 
               return {

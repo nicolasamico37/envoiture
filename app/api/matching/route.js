@@ -248,6 +248,40 @@ export async function GET(request) {
 
     /*
      * --------------------------------------------------
+     * RÉSIDENCE UTILISATEUR COURANT
+     * --------------------------------------------------
+     */
+
+    const {
+      data: currentResidence,
+      error:
+        currentResidenceError,
+    } = await supabase
+      .from(
+        "residences_privees"
+      )
+      .select(`
+        ville,
+        latitude,
+        longitude
+      `)
+      .eq(
+        "utilisateur_id",
+        user.id
+      )
+      .maybeSingle();
+
+    if (
+      currentResidenceError
+    ) {
+      console.error(
+        "Erreur résidence utilisateur :",
+        currentResidenceError
+      );
+    }
+
+    /*
+     * --------------------------------------------------
      * HABITUDES UTILISATEUR COURANT
      * --------------------------------------------------
      */
@@ -285,39 +319,6 @@ export async function GET(request) {
             "Impossible de charger vos habitudes de déplacement.",
         },
         { status: 500 }
-      );
-    }
-
-    /*
-     * --------------------------------------------------
-     * RÉSIDENCE UTILISATEUR COURANT
-     * --------------------------------------------------
-     */
-
-    const {
-      data: currentResidence,
-      error:
-        currentResidenceError,
-    } = await supabase
-      .from(
-        "residences_privees"
-      )
-      .select(`
-        latitude,
-        longitude
-      `)
-      .eq(
-        "utilisateur_id",
-        user.id
-      )
-      .maybeSingle();
-
-    if (
-      currentResidenceError
-    ) {
-      console.error(
-        "Erreur résidence utilisateur :",
-        currentResidenceError
       );
     }
 
@@ -420,10 +421,6 @@ export async function GET(request) {
         currentProfile
           .site_travail_id,
 
-      sector:
-        currentProfile
-          .secteur,
-
       days:
         currentMovement.days,
 
@@ -505,9 +502,6 @@ export async function GET(request) {
         destination:
           candidate
             .site_travail_id,
-
-        sector:
-          candidate.secteur,
 
         days:
           candidateMovement.days,
@@ -665,7 +659,8 @@ export async function GET(request) {
           candidate.nom,
 
         city:
-          candidate.secteur,
+          candidate
+            .residence_ville,
 
         establishment:
           candidate.site_name,
@@ -752,10 +747,6 @@ export async function GET(request) {
           role:
             compatibility
               .roleScore,
-
-          sector:
-            compatibility
-              .sectorScore,
 
           residence:
             finalScore

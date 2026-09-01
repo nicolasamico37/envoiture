@@ -255,8 +255,15 @@ export function AuthProvider({ children }) {
       role:
         userData.role,
 
+      /*
+       * La ville de résidence est désormais
+       * la source de l'information "zone".
+       *
+       * Elle provient de residences_privees
+       * et non plus de profils.secteur.
+       */
       zone:
-        profileData.secteur,
+        residenceData?.ville ?? null,
 
       establishment:
         siteTravail?.name ?? null,

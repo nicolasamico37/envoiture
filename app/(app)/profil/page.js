@@ -75,10 +75,10 @@ export default function ProfilePage() {
     useState(false);
 
   const [message, setMessage] =
-    useState("")
+    useState("");
 
   const [presentationError, setPresentationError] =
-    useState("")
+    useState("");
 
   const presentationRef = useRef(null);
 
@@ -113,7 +113,6 @@ export default function ProfilePage() {
       setFormData({
         first_name: "",
         last_name: "",
-        city: "",
         photo: "",
         presentation: "",
         site_travail_id: null,
@@ -197,9 +196,6 @@ export default function ProfilePage() {
       last_name:
         profile.last_name ?? "",
 
-      city:
-        profile.zone ?? "",
-
       photo:
         profile.photo ?? "",
 
@@ -226,20 +222,43 @@ export default function ProfilePage() {
         error: profileDataError,
       } = await supabase
         .from("profils")
-        .select("presentation")
-        .eq("utilisateur_id", profile.id)
+        .select(`
+          prenom,
+          nom,
+          photo,
+          presentation,
+          site_travail_id
+        `)
+        .eq(
+          "utilisateur_id",
+          profile.id
+        )
         .maybeSingle();
 
       if (profileDataError) {
         console.error(
-          "Erreur lors du chargement de la présentation :",
+          "Erreur chargement données profil :",
           profileDataError
         );
-      } else {
-        setFormData((current) => ({
-          ...current,
-          presentation: profileData?.presentation ?? "",
-        }));
+      }
+
+      if (profileData) {
+        setFormData({
+          first_name:
+            profileData.prenom ?? "",
+
+          last_name:
+            profileData.nom ?? "",
+
+          photo:
+            profileData.photo ?? "",
+
+          presentation:
+            profileData.presentation ?? "",
+
+          site_travail_id:
+            profileData.site_travail_id ?? null,
+        });
       }
 
       /*
@@ -253,9 +272,14 @@ export default function ProfilePage() {
         error: residenceError,
       } = await supabase
         .from("residences_privees")
-        .select(
-          "adresse, code_postal, ville"
-        )
+        .select(`
+          adresse,
+          code_postal,
+          ville,
+          latitude,
+          longitude,
+          ban_id
+        `)
         .eq(
           "utilisateur_id",
           profile.id
@@ -264,14 +288,12 @@ export default function ProfilePage() {
 
       if (residenceError) {
         console.error(
-          "Erreur lors du chargement de la résidence privée :",
+          "Erreur chargement résidence :",
           residenceError
         );
+      }
 
-        setMessage(
-          "Impossible de charger les informations de résidence."
-        );
-      } else if (residenceData) {
+      if (residenceData) {
         setResidence({
           adresse:
             residenceData.adresse ?? "",
@@ -282,19 +304,13 @@ export default function ProfilePage() {
           ville:
             residenceData.ville ?? "",
         });
-      } else {
-        setResidence({
-          adresse: "",
-          code_postal: "",
-          ville: "",
-        });
       }
 
       setLoadingResidence(false);
 
       /*
        * -----------------------------------------------
-       * PRÉFÉRENCES UTILISATEUR
+       * PRÉFÉRENCES
        * -----------------------------------------------
        */
 
@@ -302,11 +318,8 @@ export default function ProfilePage() {
         data: preferencesData,
         error: preferencesError,
       } = await supabase
-        .from(
-          "preferences_utilisateur"
-        )
+        .from("preferences_utilisateur")
         .select(`
-          id,
           peut_conduire,
           peut_etre_passager,
           parking_travail_id,
@@ -320,14 +333,12 @@ export default function ProfilePage() {
 
       if (preferencesError) {
         console.error(
-          "Erreur lors du chargement des préférences :",
+          "Erreur chargement préférences :",
           preferencesError
         );
+      }
 
-        setMessage(
-          "Impossible de charger vos préférences de covoiturage."
-        );
-      } else if (preferencesData) {
+      if (preferencesData) {
         setPreferences({
           peut_conduire:
             Boolean(
@@ -340,65 +351,16 @@ export default function ProfilePage() {
             ),
 
           parking_travail_id:
-            preferencesData
-              .parking_travail_id ?? null,
+            preferencesData.parking_travail_id ??
+            null,
 
           vehicule_defaut_id:
-            preferencesData
-              .vehicule_defaut_id ?? null,
+            preferencesData.vehicule_defaut_id ??
+            null,
         });
       }
 
-      /*
-       * -----------------------------------------------
-       * PARKINGS DU SITE DE TRAVAIL
-       * -----------------------------------------------
-       */
-
-      if (
-        profile.site_travail_id
-      ) {
-        const {
-          data: parkingData,
-          error: parkingError,
-        } = await supabase
-          .from("sncf_parkings")
-          .select(`
-            id,
-            site_id,
-            name,
-            latitude,
-            longitude,
-            active
-          `)
-          .eq(
-            "site_id",
-            profile.site_travail_id
-          )
-          .eq(
-            "active",
-            true
-          )
-          .order(
-            "name",
-            {
-              ascending: true,
-            }
-          );
-
-        if (parkingError) {
-          console.error(
-            "Erreur lors du chargement des parkings :",
-            parkingError
-          );
-        } else {
-          setParkings(
-            parkingData || []
-          );
-        }
-      } else {
-        setParkings([]);
-      }
+      setLoadingPreferences(false);
 
       /*
        * -----------------------------------------------
@@ -407,163 +369,195 @@ export default function ProfilePage() {
        */
 
       const {
-        data: vehicleData,
-        error: vehicleError,
+        data: vehiclesData,
+        error: vehiclesError,
       } = await supabase
         .from("vehicules")
         .select(`
           id,
-          utilisateur_id,
           libelle,
           marque,
           modele,
           couleur,
           places_proposees,
           statut,
-          created_at,
-          updated_at
+          archived_at
         `)
         .eq(
           "utilisateur_id",
           profile.id
         )
-        .eq(
-          "statut",
-          "actif"
-        )
         .is(
           "archived_at",
           null
         )
-        .order(
-          "created_at",
-          {
-            ascending: true,
-          }
-        );
+        .order("created_at", {
+          ascending: true,
+        });
 
-      if (vehicleError) {
+      if (vehiclesError) {
         console.error(
-          "Erreur lors du chargement des véhicules :",
-          vehicleError
-        );
-
-        setVehicleMessage(
-          "Impossible de charger vos véhicules."
-        );
-      } else {
-        setVehicles(
-          vehicleData || []
+          "Erreur chargement véhicules :",
+          vehiclesError
         );
       }
 
-      setLoadingPreferences(false);
+      setVehicles(
+        vehiclesData || []
+      );
+
       setLoadingVehicles(false);
-    }
 
-    loadProfileData();
+      /*
+       * -----------------------------------------------
+       * PARKINGS
+       * -----------------------------------------------
+       */
 
-    setMessage("");
-    setVehicleMessage("");
-  }, [profile]);
-
-  /*
-   * ------------------------------------------------
-   * CHARGEMENT DES PARKINGS POUR UN NOUVEAU PROFIL
-   * ------------------------------------------------
-   */
-
-  useEffect(() => {
-    if (
-      profile ||
-      !formData?.site_travail_id
-    ) {
-      if (!formData?.site_travail_id) {
-        setParkings([]);
-      }
-
-      return;
-    }
-
-    async function loadNewProfileParkings() {
       const {
-        data,
-        error,
+        data: parkingsData,
+        error: parkingsError,
       } = await supabase
         .from("sncf_parkings")
         .select(`
           id,
-          site_id,
           name,
           latitude,
-          longitude,
-          active
+          longitude
         `)
         .eq(
           "site_id",
-          formData.site_travail_id
+          profile.site_travail_id
         )
-        .eq(
-          "active",
-          true
-        )
-        .order(
-          "name",
-          {
-            ascending: true,
-          }
-        );
+        .order("name", {
+          ascending: true,
+        });
 
-      if (error) {
+      if (parkingsError) {
         console.error(
-          "Erreur lors du chargement des parkings :",
-          error
-        );
-
-        setParkings([]);
-      } else {
-        setParkings(
-          data || []
+          "Erreur chargement parkings :",
+          parkingsError
         );
       }
+
+      setParkings(
+        parkingsData || []
+      );
+
+      /*
+       * -----------------------------------------------
+       * SITES SNCF
+       * -----------------------------------------------
+       */
+
+      setLoadingSites(true);
+
+      const {
+        data: sitesData,
+        error: sitesError,
+      } = await supabase
+        .from("sncf_sites")
+        .select(`
+          id,
+          name,
+          type,
+          city,
+          region,
+          active
+        `)
+        .eq("active", true)
+        .order("name", {
+          ascending: true,
+        });
+
+      if (sitesError) {
+        console.error(
+          "Erreur chargement sites SNCF :",
+          sitesError
+        );
+      }
+
+      setSites(
+        sitesData || []
+      );
+
+      setLoadingSites(false);
     }
 
-    loadNewProfileParkings();
+    loadProfileData();
   }, [
     profile,
-    formData?.site_travail_id,
   ]);
 
   /*
    * ------------------------------------------------
-   * AFFICHAGE DU CHARGEMENT
+   * CHARGEMENT / GÉOCODAGE DE LA RÉSIDENCE
    * ------------------------------------------------
    */
 
-  if (loading) {
-    return (
-      <LoadingScreen
-        text="Chargement du profil..."
-      />
-    );
-  }
+  async function geocodeResidence() {
+    if (
+      !residence.adresse.trim() ||
+      !residence.code_postal.trim() ||
+      !residence.ville.trim()
+    ) {
+      setMessage(
+        "Veuillez renseigner votre adresse, votre code postal et votre ville de résidence."
+      );
 
-  if (!formData) {
-    return (
-      <LoadingScreen
-        text="Préparation du profil..."
-      />
-    );
-  }
+      return null;
+    }
 
-  const initials =
-    `${formData.first_name?.[0] ?? ""}${
-      formData.last_name?.[0] ?? ""
-    }`.toUpperCase();
+    try {
+      const response =
+        await fetch(
+          `/api/geocode?${new URLSearchParams(
+            {
+              adresse:
+                residence.adresse.trim(),
+
+              code_postal:
+                residence.code_postal.trim(),
+
+              ville:
+                residence.ville.trim(),
+            }
+          ).toString()}`
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+        setMessage(
+          data.error ||
+            "Impossible de localiser cette adresse."
+        );
+
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error(
+        "Erreur géocodage résidence :",
+        error
+      );
+
+      setMessage(
+        "Impossible de localiser cette adresse."
+      );
+
+      return null;
+    }
+  }
 
   /*
    * ------------------------------------------------
-   * MODIFICATION DES CHAMPS
+   * MODIFICATION DU FORMULAIRE
    * ------------------------------------------------
    */
 
@@ -571,133 +565,35 @@ export default function ProfilePage() {
     field,
     value
   ) {
-    setFormData((current) => ({
-      ...current,
-      [field]: value,
-    }));
-
-    setMessage("");
+    setFormData(
+      (current) => ({
+        ...current,
+        [field]: value,
+      })
+    );
   }
 
   function updateResidenceField(
     field,
     value
   ) {
-    setResidence((current) => ({
-      ...current,
-      [field]: value,
-    }));
-
-    setMessage("");
-  }
-
-  function updatePreference(
-    field,
-    value
-  ) {
-    setPreferences((current) => ({
-      ...current,
-      [field]: value,
-    }));
-
-    setMessage("");
-  }
-
-  function updateVehicleField(
-    field,
-    value
-  ) {
-    setVehicleForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
-
-    setVehicleMessage("");
+    setResidence(
+      (current) => ({
+        ...current,
+        [field]: value,
+      })
+    );
   }
 
   /*
    * ------------------------------------------------
-   * GÉOCODAGE
+   * SAUVEGARDE DU PROFIL
    * ------------------------------------------------
    */
 
-  async function geocodeResidence() {
-    const adresse =
-      residence.adresse.trim();
-
-    const codePostal =
-      residence.code_postal.trim();
-
-    const ville =
-      residence.ville.trim();
-
-    if (
-      !adresse ||
-      !codePostal ||
-      !ville
-    ) {
-      setMessage(
-        "Veuillez renseigner votre adresse, votre code postal et votre ville."
-      );
-
-      return null;
-    }
-
-    const response =
-      await fetch(
-        "/api/geocode",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-
-          body: JSON.stringify({
-            adresse,
-            code_postal:
-              codePostal,
-            ville,
-          }),
-        }
-      );
-
-    const data =
-      await response.json();
-
-    if (
-      !response.ok ||
-      !data.success
-    ) {
-      throw new Error(
-        data.error ||
-          "Impossible de géocoder cette adresse."
-      );
-    }
-
-    if (
-      data.confidence !== "high"
-    ) {
-      throw new Error(
-        "L'adresse n'a pas pu être vérifiée avec suffisamment de précision. Vérifiez l'adresse saisie."
-      );
-    }
-
-    return data.result;
-  }
-
-  /*
-   * ------------------------------------------------
-   * ENREGISTREMENT DU PROFIL
-   * ------------------------------------------------
-   */
-
-  async function handleSave(e) {
-    e.preventDefault();
-
-    setSaving(true);
+  async function handleSave() {
     setMessage("");
+    setPresentationError("");
 
     try {
       /*
@@ -724,11 +620,10 @@ export default function ProfilePage() {
 
       if (
         !formData.first_name.trim() ||
-        !formData.last_name.trim() ||
-        !formData.city.trim()
+        !formData.last_name.trim()
       ) {
         setMessage(
-          "Veuillez renseigner votre prénom, votre nom et votre secteur de résidence."
+          "Veuillez renseigner votre prénom et votre nom."
         );
 
         return;
@@ -744,10 +639,25 @@ export default function ProfilePage() {
         return;
       }
 
+      if (
+        !residence.adresse.trim() ||
+        !residence.code_postal.trim() ||
+        !residence.ville.trim()
+      ) {
+        setMessage(
+          "Veuillez renseigner votre adresse, votre code postal et votre ville de résidence."
+        );
+
+        return;
+      }
+
       const presentation =
         (formData.presentation || "").trim();
 
-      if (presentation.length > PRESENTATION_MAX_LENGTH) {
+      if (
+        presentation.length >
+        PRESENTATION_MAX_LENGTH
+      ) {
         setMessage(
           `Votre présentation ne peut pas dépasser ${PRESENTATION_MAX_LENGTH} caractères.`
         );
@@ -755,12 +665,18 @@ export default function ProfilePage() {
         return;
       }
 
-      if (containsForbiddenPresentationTerm(presentation)) {
+      if (
+        containsForbiddenPresentationTerm(
+          presentation
+        )
+      ) {
         const errorMessage =
           "Votre présentation contient un terme qui ne peut pas être utilisé. Merci de la reformuler.";
 
         setMessage("");
-        setPresentationError(errorMessage);
+        setPresentationError(
+          errorMessage
+        );
 
         requestAnimationFrame(() => {
           presentationRef.current?.scrollIntoView({
@@ -809,9 +725,6 @@ export default function ProfilePage() {
             nom:
               formData.last_name.trim(),
 
-            secteur:
-              formData.city.trim(),
-
             photo:
               formData.photo || null,
 
@@ -853,9 +766,6 @@ export default function ProfilePage() {
 
             nom:
               formData.last_name.trim(),
-
-            secteur:
-              formData.city.trim(),
 
             photo:
               formData.photo || null,
@@ -932,146 +842,15 @@ export default function ProfilePage() {
 
       if (residenceError) {
         console.error(
-          "Erreur lors de l'enregistrement de la résidence privée :",
+          "Erreur lors de l'enregistrement de la résidence :",
           residenceError
         );
 
         setMessage(
-          "Le profil a été enregistré, mais pas la résidence."
+          "Le profil a été enregistré, mais impossible d'enregistrer la résidence."
         );
 
         return;
-      }
-
-      /*
-       * -----------------------------------------------
-       * PRÉFÉRENCES
-       * -----------------------------------------------
-       */
-
-      const {
-        data: existingPreferences,
-        error: preferencesLoadError,
-      } = await supabase
-        .from(
-          "preferences_utilisateur"
-        )
-        .select(`
-          id
-        `)
-        .eq(
-          "utilisateur_id",
-          userId
-        )
-        .maybeSingle();
-
-      if (preferencesLoadError) {
-        console.error(
-          "Erreur lors du chargement des préférences existantes :",
-          preferencesLoadError
-        );
-
-        setMessage(
-          "Impossible de charger vos préférences de covoiturage."
-        );
-
-        return;
-      }
-
-      const preferencesPayload = {
-        utilisateur_id:
-          userId,
-
-        peut_conduire:
-          preferences.peut_conduire,
-
-        peut_etre_passager:
-          preferences.peut_etre_passager,
-
-        parking_travail_id:
-          preferences.peut_conduire
-            ? preferences.parking_travail_id
-            : null,
-
-        vehicule_defaut_id:
-          preferences.peut_conduire
-            ? preferences.vehicule_defaut_id
-            : null,
-
-        updated_at:
-          new Date().toISOString(),
-      };
-
-      if (
-        existingPreferences
-      ) {
-        const {
-          error:
-            preferencesUpdateError,
-        } = await supabase
-          .from(
-            "preferences_utilisateur"
-          )
-          .update(
-            preferencesPayload
-          )
-          .eq(
-            "id",
-            existingPreferences.id
-          );
-
-        if (
-          preferencesUpdateError
-        ) {
-          console.error(
-            "Erreur lors de la mise à jour des préférences :",
-            preferencesUpdateError
-          );
-
-          setMessage(
-            `Erreur préférences : ${
-              preferencesUpdateError.message ||
-              "Erreur inconnue"
-            }`
-          );
-
-          return;
-        }
-      } else {
-        const {
-          error:
-            preferencesInsertError,
-        } = await supabase
-          .from(
-            "preferences_utilisateur"
-          )
-          .insert({
-            ...preferencesPayload,
-
-            notifications_application:
-              false,
-
-            notifications_email:
-              false,
-          });
-
-        if (
-          preferencesInsertError
-        ) {
-          console.error(
-            "Erreur lors de la création des préférences :",
-            preferencesInsertError
-          );
-
-          setMessage(
-            `Erreur préférences : ${
-              preferencesInsertError.message ||
-              "Erreur inconnue"
-            }`
-          );
-
-          return;
-        }
       }
 
       /*
@@ -1083,32 +862,25 @@ export default function ProfilePage() {
       await refreshProfile();
 
       setMessage(
-        profile
-          ? "Profil enregistré et adresse vérifiée ✅"
-          : "Profil créé et adresse vérifiée ✅"
+        "Profil enregistré avec succès."
       );
 
-      setTimeout(() => {
-        setMessage("");
-      }, 2500);
     } catch (error) {
       console.error(
-        "Erreur lors de l'enregistrement :",
+        "Erreur sauvegarde profil :",
         error
       );
 
       setMessage(
         error?.message ||
-          "Une erreur est survenue lors de l'enregistrement."
+          "Impossible d'enregistrer le profil."
       );
-    } finally {
-      setSaving(false);
     }
   }
 
   /*
    * ------------------------------------------------
-   * AJOUT D'UN VÉHICULE
+   * GESTION DES VÉHICULES
    * ------------------------------------------------
    */
 
@@ -1120,31 +892,49 @@ export default function ProfilePage() {
       couleur: "",
       places_proposees: 1,
     });
+
     setEditingVehicleId(null);
     setShowVehicleForm(false);
-    setVehicleMessage("");
   }
 
-  function handleEditVehicle(vehicle) {
-    if (!preferences.peut_conduire) {
-      return;
-    }
-
-    setEditingVehicleId(vehicle.id);
-    setVehicleForm({
-      libelle: vehicle.libelle || "",
-      marque: vehicle.marque || "",
-      modele: vehicle.modele || "",
-      couleur: vehicle.couleur || "",
-      places_proposees:
-        Number(vehicle.places_proposees) || 1,
-    });
-    setShowVehicleForm(true);
-    setVehicleMessage("");
+  function updateVehicleField(
+    field,
+    value
+  ) {
+    setVehicleForm(
+      (current) => ({
+        ...current,
+        [field]: value,
+      })
+    );
   }
 
   async function handleSaveVehicle() {
-    if (!preferences.peut_conduire) {
+    setVehicleMessage("");
+
+    if (
+      !vehicleForm.libelle.trim()
+    ) {
+      setVehicleMessage(
+        "Veuillez renseigner un nom pour le véhicule."
+      );
+
+      return;
+    }
+
+    const places =
+      Number(
+        vehicleForm.places_proposees
+      );
+
+    if (
+      !Number.isFinite(places) ||
+      places < 1
+    ) {
+      setVehicleMessage(
+        "Le nombre de places doit être supérieur ou égal à 1."
+      );
+
       return;
     }
 
@@ -1156,94 +946,36 @@ export default function ProfilePage() {
       setVehicleMessage(
         "Utilisateur non authentifié."
       );
-      return;
-    }
 
-    const libelle =
-      vehicleForm.libelle.trim();
-
-    const marque =
-      vehicleForm.marque.trim();
-
-    const modele =
-      vehicleForm.modele.trim();
-
-    const couleur =
-      vehicleForm.couleur.trim();
-
-    const places = Number(
-      vehicleForm.places_proposees
-    );
-
-    if (!libelle) {
-      setVehicleMessage(
-        "Veuillez donner un nom à votre véhicule."
-      );
-      return;
-    }
-
-    if (
-      !Number.isInteger(places) ||
-      places < 1
-    ) {
-      setVehicleMessage(
-        "Le nombre maximal de passagers doit être supérieur à 0."
-      );
       return;
     }
 
     setSavingVehicle(true);
-    setVehicleMessage("");
 
     try {
       if (editingVehicleId) {
-        const { count, error: tripCountError } =
-          await supabase
-            .from("trajets")
-            .select(
-              "id",
-              {
-                count: "exact",
-                head: true,
-              }
-            )
-            .eq(
-              "vehicule_id",
-              editingVehicleId
-            )
-            .gt(
-              "places_proposees",
-              places
-            )
-            .in("statut", [
-              "ouvert",
-              "complet",
-            ]);
-
-        if (tripCountError) {
-          throw tripCountError;
-        }
-
-        if (count > 0) {
-          setVehicleMessage(
-            "Impossible de réduire cette capacité : au moins un trajet existant propose déjà davantage de places."
-          );
-          return;
-        }
-
         const {
-          data: updatedVehicle,
-          error: updateError,
+          error,
         } = await supabase
           .from("vehicules")
           .update({
-            libelle,
-            marque: marque || null,
-            modele: modele || null,
-            couleur: couleur || null,
-            places_proposees: places,
-            updated_at:
-              new Date().toISOString(),
+            libelle:
+              vehicleForm.libelle.trim(),
+
+            marque:
+              vehicleForm.marque.trim() ||
+              null,
+
+            modele:
+              vehicleForm.modele.trim() ||
+              null,
+
+            couleur:
+              vehicleForm.couleur.trim() ||
+              null,
+
+            places_proposees:
+              places,
           })
           .eq(
             "id",
@@ -1252,534 +984,415 @@ export default function ProfilePage() {
           .eq(
             "utilisateur_id",
             userId
-          )
+          );
+
+        if (error) {
+          throw error;
+        }
+
+        setVehicleMessage(
+          "Véhicule modifié avec succès."
+        );
+      } else {
+        const {
+          data,
+          error,
+        } = await supabase
+          .from("vehicules")
+          .insert({
+            utilisateur_id:
+              userId,
+
+            libelle:
+              vehicleForm.libelle.trim(),
+
+            marque:
+              vehicleForm.marque.trim() ||
+              null,
+
+            modele:
+              vehicleForm.modele.trim() ||
+              null,
+
+            couleur:
+              vehicleForm.couleur.trim() ||
+              null,
+
+            places_proposees:
+              places,
+
+            statut:
+              "ACTIF",
+          })
           .select(`
             id,
-            utilisateur_id,
             libelle,
             marque,
             modele,
             couleur,
             places_proposees,
             statut,
-            created_at,
-            updated_at
+            archived_at
           `)
           .single();
 
-        if (updateError) {
-          throw updateError;
+        if (error) {
+          throw error;
         }
 
-        setVehicles((current) =>
-          current.map((vehicle) =>
-            vehicle.id ===
-            editingVehicleId
-              ? updatedVehicle
-              : vehicle
-          )
-        );
-
-        resetVehicleForm();
-        setVehicleMessage(
-          "Véhicule modifié ✅"
-        );
-        return;
-      }
-
-      const {
-        data: newVehicle,
-        error: vehicleError,
-      } = await supabase
-        .from("vehicules")
-        .insert({
-          utilisateur_id: userId,
-          libelle,
-          marque: marque || null,
-          modele: modele || null,
-          couleur: couleur || null,
-          places_proposees: places,
-          statut: "actif",
-        })
-        .select(`
-          id,
-          utilisateur_id,
-          libelle,
-          marque,
-          modele,
-          couleur,
-          places_proposees,
-          statut,
-          created_at,
-          updated_at
-        `)
-        .single();
-
-      if (vehicleError) {
-        throw vehicleError;
-      }
-
-      if (!newVehicle) {
-        throw new Error(
-          "Le véhicule n'a pas pu être récupéré après son enregistrement."
-        );
-      }
-
-      setVehicles((current) => [
-        ...current,
-        newVehicle,
-      ]);
-
-      if (vehicles.length === 0) {
-        const {
-          error: defaultError,
-        } = await supabase
-          .from(
-            "preferences_utilisateur"
-          )
-          .update({
-            vehicule_defaut_id:
-              newVehicle.id,
-            updated_at:
-              new Date().toISOString(),
-          })
-          .eq(
-            "utilisateur_id",
-            userId
-          );
-
-        if (defaultError) {
-          throw defaultError;
-        }
-
-        setPreferences(
-          (current) => ({
+        setVehicles(
+          (current) => [
             ...current,
-            vehicule_defaut_id:
-              newVehicle.id,
-          })
+            data,
+          ]
+        );
+
+        setVehicleMessage(
+          "Véhicule ajouté avec succès."
+        );
+      }
+
+      if (
+        editingVehicleId
+      ) {
+        setVehicles(
+          (current) =>
+            current.map(
+              (vehicle) =>
+                vehicle.id ===
+                editingVehicleId
+                  ? {
+                      ...vehicle,
+                      libelle:
+                        vehicleForm.libelle.trim(),
+                      marque:
+                        vehicleForm.marque.trim() ||
+                        null,
+                      modele:
+                        vehicleForm.modele.trim() ||
+                        null,
+                      couleur:
+                        vehicleForm.couleur.trim() ||
+                        null,
+                      places_proposees:
+                        places,
+                    }
+                  : vehicle
+            )
         );
       }
 
       resetVehicleForm();
-      setVehicleMessage(
-        vehicles.length > 0
-          ? "Véhicule ajouté ✅"
-          : "Véhicule ajouté et défini par défaut ✅"
-      );
+
     } catch (error) {
       console.error(
-        "Erreur lors de l'enregistrement du véhicule :",
+        "Erreur sauvegarde véhicule :",
         error
       );
 
       setVehicleMessage(
-        `Erreur véhicule : ${
-          error?.message ||
-          "Une erreur est survenue."
-        }`
+        error?.message ||
+          "Impossible d'enregistrer le véhicule."
       );
     } finally {
       setSavingVehicle(false);
     }
   }
 
-  async function handleDeleteVehicle(vehicle) {
-    if (!preferences.peut_conduire) {
-      return;
-    }
+  function editVehicle(
+    vehicle
+  ) {
+    setVehicleForm({
+      libelle:
+        vehicle.libelle ?? "",
 
-    const userId =
-      profile?.id ||
-      session?.user?.id;
+      marque:
+        vehicle.marque ?? "",
 
-    if (!userId) {
-      setVehicleMessage(
-        "Utilisateur non authentifié."
-      );
-      return;
-    }
+      modele:
+        vehicle.modele ?? "",
 
-    const confirmed = window.confirm(
-      `Supprimer le véhicule « ${
-        vehicle.libelle || "Véhicule"
-      } » ?`
+      couleur:
+        vehicle.couleur ?? "",
+
+      places_proposees:
+        vehicle.places_proposees ?? 1,
+    });
+
+    setEditingVehicleId(
+      vehicle.id
     );
+
+    setShowVehicleForm(true);
+
+    setVehicleMessage("");
+  }
+
+  async function archiveVehicle(
+    vehicle
+  ) {
+    if (
+      !vehicle?.id
+    ) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Voulez-vous archiver le véhicule « ${
+          vehicle.libelle
+        } » ?`
+      );
 
     if (!confirmed) {
       return;
     }
 
-    setSavingVehicle(true);
     setVehicleMessage("");
 
     try {
+      const {
+        error,
+      } = await supabase
+        .from("vehicules")
+        .update({
+          statut:
+            "ARCHIVE",
+
+          archived_at:
+            new Date().toISOString(),
+        })
+        .eq(
+          "id",
+          vehicle.id
+        );
+
+      if (error) {
+        throw error;
+      }
+
+      setVehicles(
+        (current) =>
+          current.filter(
+            (item) =>
+              item.id !==
+              vehicle.id
+          )
+      );
+
       if (
-        preferences.vehicule_defaut_id ===
+        preferences
+          .vehicule_defaut_id ===
         vehicle.id
       ) {
-        const {
-          error: preferenceError,
-        } = await supabase
-          .from(
-            "preferences_utilisateur"
-          )
-          .update({
-            vehicule_defaut_id: null,
-            updated_at:
-              new Date().toISOString(),
-          })
-          .eq(
-            "utilisateur_id",
-            userId
-          );
-
-        if (preferenceError) {
-          throw preferenceError;
-        }
-
         setPreferences(
           (current) => ({
             ...current,
-            vehicule_defaut_id: null,
+            vehicule_defaut_id:
+              null,
           })
         );
       }
 
-      const { error: archiveError } =
-        await supabase
-          .from("vehicules")
-          .update({
-            archived_at:
-              new Date().toISOString(),
-            updated_at:
-              new Date().toISOString(),
-          })
-          .eq("id", vehicle.id)
-          .eq(
-            "utilisateur_id",
-            userId
-          );
-
-      if (archiveError) {
-        throw archiveError;
-      }
-
-      setVehicles((current) =>
-        current.filter(
-          (item) => item.id !== vehicle.id
-        )
-      );
-
-      if (
-        editingVehicleId ===
-        vehicle.id
-      ) {
-        resetVehicleForm();
-      }
-
       setVehicleMessage(
-        "Véhicule supprimé ✅"
+        "Véhicule archivé."
       );
+
     } catch (error) {
       console.error(
-        "Erreur lors de la suppression du véhicule :",
+        "Erreur archivage véhicule :",
         error
       );
 
       setVehicleMessage(
-        `Erreur véhicule : ${
-          error?.message ||
-          "Impossible de supprimer le véhicule."
-        }`
+        error?.message ||
+          "Impossible d'archiver le véhicule."
       );
-    } finally {
-      setSavingVehicle(false);
     }
   }
 
   /*
    * ------------------------------------------------
-   * VÉHICULE PAR DÉFAUT
+   * CHARGEMENT
    * ------------------------------------------------
    */
 
-  async function handleSetDefaultVehicle(
-    vehicleId
-  ) {
-    if (
-      !preferences.peut_conduire
-    ) {
-      return;
-    }
-
-    const userId =
-      profile?.id ||
-      session?.user?.id;
-
-    if (!userId) {
-      return;
-    }
-
-    if (
-      preferences.vehicule_defaut_id ===
-      vehicleId
-    ) {
-      return;
-    }
-
-    setVehicleMessage("");
-
-    const {
-      error,
-    } = await supabase
-      .from(
-        "preferences_utilisateur"
-      )
-      .update({
-        vehicule_defaut_id:
-          vehicleId,
-
-        updated_at:
-          new Date().toISOString(),
-      })
-      .eq(
-        "utilisateur_id",
-        userId
-      );
-
-    if (error) {
-      console.error(
-        "Erreur lors de la définition du véhicule par défaut :",
-        error
-      );
-
-      setVehicleMessage(
-        error.message ||
-          "Impossible de définir le véhicule par défaut."
-      );
-
-      return;
-    }
-
-    setPreferences(
-      (current) => ({
-        ...current,
-        vehicule_defaut_id:
-          vehicleId,
-      })
+  if (loading) {
+    return (
+      <LoadingScreen
+        text="Chargement du profil..."
+      />
     );
-
-    setVehicleMessage(
-      "Véhicule par défaut enregistré ✅"
-    );
-
-    setTimeout(() => {
-      setVehicleMessage("");
-    }, 2500);
   }
 
-  function vehicleLabel(
-    vehicle
-  ) {
-    if (vehicle.libelle) {
-      return vehicle.libelle;
-    }
-
-    const details = [
-      vehicle.marque,
-      vehicle.modele,
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    return details || "Véhicule";
+  if (!formData) {
+    return (
+      <LoadingScreen
+        text="Préparation du profil..."
+      />
+    );
   }
 
-  /*
-   * ------------------------------------------------
-   * AFFICHAGE
-   * ------------------------------------------------
-   */
+  const initials =
+    `${formData.first_name?.[0] ?? ""}${
+      formData.last_name?.[0] ?? ""
+    }`.toUpperCase();
 
   return (
-    <div className="space-y-8">
-      <Card
-        title={
-          profile
-            ? "Mon profil"
-            : "Créer mon profil"
-        }
-      >
+    <div className="flex-1 min-h-screen bg-gray-50 p-4 lg:p-8">
+      <Card title="Mon profil">
 
-        <form
-          onSubmit={handleSave}
-          className="space-y-8"
-        >
+        {/* ------------------------------------------ */}
+        {/* IDENTITÉ                                  */}
+        {/* ------------------------------------------ */}
 
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-
-            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-pink-600 to-red-500 text-white flex items-center justify-center text-4xl font-bold shrink-0">
-              {initials || "?"}
-            </div>
-
-            <div className="flex-1 w-full">
-
-              <h2 className="text-2xl font-bold text-gray-900">
-                {formData.first_name ||
-                  "Nouveau"}{" "}
-                {formData.last_name}
-              </h2>
-
-              {profile?.email ? (
-                <p className="text-gray-500">
-                  {profile.email}
-                </p>
-              ) : session?.user?.email ? (
-                <p className="text-gray-500">
-                  {session.user.email}
-                </p>
-              ) : null}
-
-            </div>
-
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-            <div>
-
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Prénom
-              </label>
-
-              <input
-                type="text"
-                value={
-                  formData.first_name
-                }
-                onChange={(e) =>
-                  updateField(
-                    "first_name",
-                    e.target.value
-                  )
-                }
-                className="w-full border border-gray-200 rounded-2xl px-5 py-3"
-                required
-              />
-
-            </div>
-
-            <div>
-
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nom
-              </label>
-
-              <input
-                type="text"
-                value={
-                  formData.last_name
-                }
-                onChange={(e) =>
-                  updateField(
-                    "last_name",
-                    e.target.value
-                  )
-                }
-                className="w-full border border-gray-200 rounded-2xl px-5 py-3"
-                required
-              />
-
-            </div>
-
-          </div>
+        <div className="space-y-8">
 
           <div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Informations personnelles
+            </h3>
 
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Adresse e-mail
-            </label>
-
-            <input
-              type="email"
-              value={
-                profile?.email ??
-                session?.user?.email ??
-                ""
-              }
-              disabled
-              className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-gray-50 text-gray-500"
-            />
-
-            <p className="text-xs text-gray-500 mt-2">
-              L'adresse e-mail est gérée par
-              l'authentification Supabase.
+            <p className="text-sm text-gray-500 mb-6">
+              Ces informations permettent à vos collègues
+              de vous identifier.
             </p>
 
-          </div>
+            <div className="flex flex-col sm:flex-row gap-6 items-start">
 
-          {/* ------------------------------------------ */}
-          {/* PRÉSENTATION                              */}
-          {/* ------------------------------------------ */}
-
-          <div
-            ref={presentationRef}
-            className="border-t border-gray-100 pt-8"
-          >
-
-            <div className="flex items-end justify-between gap-4 mb-2">
-              <label
-                htmlFor="presentation"
-                className="block text-xl font-bold text-gray-900"
-              >
-                👋 Présentation
-              </label>
-
-              <span className="text-xs text-gray-400">
-                {formData.presentation?.length || 0} / {PRESENTATION_MAX_LENGTH}
-              </span>
-            </div>
-
-            <p className="text-sm text-gray-500 mb-4">
-              Quelques mots pour vous présenter aux autres utilisateurs.
-            </p>
-
-            <textarea
-              id="presentation"
-              value={formData.presentation || ""}
-              onChange={(e) => {
-                const value = e.target.value.slice(
-                  0,
-                  PRESENTATION_MAX_LENGTH
-                );
-
-                setPresentationError("");
-
-                updateField(
-                  "presentation",
-                  value
-                );
-              }}
-              maxLength={PRESENTATION_MAX_LENGTH}
-              rows={5}
-              placeholder="Quelques mots sur vous, vos habitudes de trajet ou ce que vous recherchez..."
-              className="w-full border border-gray-200 rounded-2xl px-5 py-4 resize-y"
-            />
-
-            <p className="text-xs text-gray-500 mt-2">
-              Cette présentation est facultative. Évitez d'y indiquer votre adresse ou des coordonnées personnelles.
-            </p>
-
-            {presentationError && (
-              <div
-                role="alert"
-                className="mt-4 rounded-2xl border-2 border-red-200 bg-red-50 px-5 py-4 text-lg font-semibold leading-relaxed text-red-700"
-              >
-                {presentationError}
+              <div className="w-24 h-24 rounded-full bg-gradient-to-r from-pink-600 to-red-500 text-white flex items-center justify-center text-3xl font-bold shrink-0">
+                {formData.photo ||
+                  initials ||
+                  "?"}
               </div>
-            )}
 
+              <div className="flex-1 w-full space-y-5">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Prénom
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        formData.first_name
+                      }
+                      onChange={(e) =>
+                        updateField(
+                          "first_name",
+                          e.target.value
+                        )
+                      }
+                      className="w-full border border-gray-200 rounded-2xl px-5 py-3"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nom
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        formData.last_name
+                      }
+                      onChange={(e) =>
+                        updateField(
+                          "last_name",
+                          e.target.value
+                        )
+                      }
+                      className="w-full border border-gray-200 rounded-2xl px-5 py-3"
+                      required
+                    />
+                  </div>
+
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Photo
+                  </label>
+
+                  <input
+                    type="text"
+                    value={
+                      formData.photo
+                    }
+                    onChange={(e) =>
+                      updateField(
+                        "photo",
+                        e.target.value
+                      )
+                    }
+                    className="w-full border border-gray-200 rounded-2xl px-5 py-3"
+                    placeholder="URL de votre avatar"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Présentation
+                  </label>
+
+                  <textarea
+                    ref={
+                      presentationRef
+                    }
+                    value={
+                      formData.presentation ||
+                      ""
+                    }
+                    onChange={(e) =>
+                      updateField(
+                        "presentation",
+                        e.target.value
+                      )
+                    }
+                    className={`w-full border rounded-2xl px-5 py-3 min-h-32 ${
+                      presentationError
+                        ? "border-red-400 bg-red-50"
+                        : "border-gray-200"
+                    }`}
+                    maxLength={
+                      PRESENTATION_MAX_LENGTH
+                    }
+                    placeholder="Présentez-vous en quelques mots..."
+                  />
+
+                  <div className="flex justify-between mt-2">
+                    <p className="text-xs text-gray-500">
+                      Cette présentation sera visible
+                      par les collègues avec lesquels
+                      vous êtes compatible.
+                    </p>
+
+                    <span className="text-xs text-gray-400">
+                      {
+                        formData.presentation?.length ||
+                        0
+                      }{" "}
+                      /{" "}
+                      {
+                        PRESENTATION_MAX_LENGTH
+                      }
+                    </span>
+                  </div>
+
+                  {presentationError && (
+                    <p className="text-sm text-red-600 mt-3">
+                      {presentationError}
+                    </p>
+                  )}
+                </div>
+
+              </div>
+            </div>
           </div>
 
           {/* ------------------------------------------ */}
@@ -1788,602 +1401,68 @@ export default function ProfilePage() {
 
           <div className="border-t border-gray-100 pt-8">
 
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
               Site de travail
             </h3>
 
-            {profile ? (
-
-              <>
-                <div className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-gray-50 text-gray-700">
-                  {profile.establishment ||
-                    "Site de travail non renseigné"}
-                </div>
-
-                <p className="text-xs text-gray-500 mt-2">
-                  Votre site de travail est défini dans
-                  votre profil professionnel.
-                </p>
-              </>
-
-            ) : (
-
-              <>
-                <select
-                  value={
-                    formData.site_travail_id ??
-                    ""
-                  }
-                  onChange={(e) =>
-                    updateField(
-                      "site_travail_id",
-                      e.target.value
-                        ? Number(
-                            e.target.value
-                          )
-                        : null
-                    )
-                  }
-                  className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white"
-                  required
-                  disabled={
-                    loadingSites
-                  }
-                >
-
-                  <option value="">
-                    {loadingSites
-                      ? "Chargement des sites..."
-                      : "Sélectionnez votre site de travail"}
-                  </option>
-
-                  {sites.map(
-                    (site) => (
-                      <option
-                        key={
-                          site.id
-                        }
-                        value={
-                          site.id
-                        }
-                      >
-                        {site.name}
-                        {site.city
-                          ? ` — ${site.city}`
-                          : ""}
-                      </option>
-                    )
-                  )}
-
-                </select>
-
-                <p className="text-xs text-gray-500 mt-2">
-                  Sélectionnez votre site de travail.
-                </p>
-              </>
-
-            )}
-
-          </div>
-
-
-            {/* ---------------------------------------- */}
-            {/* PARKING                                 */}
-            {/* ---------------------------------------- */}
-
-            <div
-              className={`mt-6 rounded-2xl p-5 border transition ${
-                preferences.peut_conduire
-                  ? "bg-gray-50 border-gray-200"
-                  : "bg-gray-100 border-gray-200 opacity-55"
-              }`}
-            >
-
-              <h4 className="font-semibold text-gray-900 mb-2">
-                Parking de destination préféré
-              </h4>
-
-              <p className="text-sm text-gray-500 mb-4">
-                Ce choix concerne vos trajets
-                en tant que conducteur.
-              </p>
-
-              {parkings.length > 0 ? (
-
-                <div className="space-y-3">
-
-                  {parkings.map(
-                    (parking) => (
-
-                      <label
-                        key={
-                          parking.id
-                        }
-                        className={`flex items-center gap-4 border rounded-2xl p-4 transition ${
-                          preferences.peut_conduire
-                            ? "cursor-pointer bg-white hover:bg-gray-50"
-                            : "cursor-not-allowed bg-gray-50"
-                        } ${
-                          preferences.parking_travail_id ===
-                            parking.id &&
-                          preferences.peut_conduire
-                            ? "border-pink-500 bg-pink-50"
-                            : "border-gray-200"
-                        }`}
-                      >
-
-                        <input
-                          type="radio"
-                          name="parking_travail"
-                          value={
-                            parking.id
-                          }
-                          checked={
-                            preferences.parking_travail_id ===
-                            parking.id
-                          }
-                          disabled={
-                            !preferences.peut_conduire
-                          }
-                          onChange={() =>
-                            updatePreference(
-                              "parking_travail_id",
-                              parking.id
-                            )
-                          }
-                          className="w-5 h-5 accent-pink-600"
-                        />
-
-                        <span className="font-medium text-gray-900">
-                          {
-                            parking.name
-                          }
-                        </span>
-
-                      </label>
-
-                    )
-                  )}
-
-                </div>
-
-              ) : (
-
-                <p className="text-sm text-gray-500">
-                  Aucun parking actif n'est
-                  actuellement enregistré
-                  pour votre site de travail.
-                </p>
-
-              )}
-
-              {!preferences.peut_conduire && (
-                <p className="text-sm text-gray-500 mt-4">
-                  🔒 Activez « Conducteur » pour
-                  modifier votre parking préféré.
-                </p>
-              )}
-
-            </div>
-
-            {/* ---------------------------------------- */}
-            {/* VÉHICULES                               */}
-            {/* ---------------------------------------- */}
-
-            <div
-              className={`mt-6 rounded-2xl p-5 border transition ${
-                preferences.peut_conduire
-                  ? "bg-gray-50 border-gray-200"
-                  : "bg-gray-100 border-gray-200 opacity-55"
-              }`}
-            >
-
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
-
-                <div>
-
-                  <h4 className="font-semibold text-gray-900">
-                    🚗 Mes véhicules
-                  </h4>
-
-                  <p className="text-sm text-gray-500 mt-1">
-                    Gérez les véhicules que vous
-                    pouvez utiliser pour le
-                    covoiturage.
-                  </p>
-
-                </div>
-
-                <button
-                  type="button"
-                  disabled={
-                    !preferences.peut_conduire ||
-                    loadingVehicles
-                  }
-                  onClick={() => {
-                    if (showVehicleForm) {
-                      resetVehicleForm();
-                    } else {
-                      setEditingVehicleId(null);
-                      setVehicleForm({
-                        libelle: "",
-                        marque: "",
-                        modele: "",
-                        couleur: "",
-                        places_proposees: 1,
-                      });
-                      setShowVehicleForm(true);
-                      setVehicleMessage("");
-                    }
-                  }}
-                  className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {showVehicleForm
-                    ? "Annuler"
-                    : "+ Ajouter un véhicule"}
-                </button>
-
-              </div>
-
-              {!preferences.peut_conduire && (
-                <p className="text-sm text-gray-500 mt-4">
-                  🔒 Activez « Conducteur » pour
-                  gérer vos véhicules.
-                </p>
-              )}
-
-              {loadingVehicles && (
-                <p className="text-sm text-gray-500 mt-4">
-                  Chargement des véhicules...
-                </p>
-              )}
-
-              {!loadingVehicles &&
-                vehicles.length ===
-                  0 && (
-
-                  <div
-                    className={`mt-4 rounded-2xl p-4 ${
-                      preferences.peut_conduire
-                        ? "bg-white"
-                        : "bg-gray-100"
-                    }`}
-                  >
-
-                    <p className="text-sm text-gray-500">
-                      Aucun véhicule enregistré.
-                    </p>
-
-                  </div>
-
-                )}
-
-              {!loadingVehicles &&
-                vehicles.length > 0 && (
-
-                  <div className="space-y-3 mt-4">
-
-                    {vehicles.map(
-                      (vehicle) => {
-
-                        const isDefault =
-                          preferences.vehicule_defaut_id ===
-                          vehicle.id;
-
-                        return (
-
-                          <div
-                            key={
-                              vehicle.id
-                            }
-                            className={`rounded-2xl p-4 border ${
-                              isDefault &&
-                              preferences.peut_conduire
-                                ? "border-pink-500 bg-pink-50"
-                                : "border-gray-200 bg-white"
-                            }`}
-                          >
-
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-
-                              <div>
-
-                                <div className="font-semibold text-gray-900">
-                                  {vehicleLabel(
-                                    vehicle
-                                  )}
-                                </div>
-
-                                <div className="text-sm text-gray-500 mt-1">
-                                  {[
-                                    vehicle.marque,
-                                    vehicle.modele,
-                                    vehicle.couleur,
-                                  ]
-                                    .filter(
-                                      Boolean
-                                    )
-                                    .join(
-                                      " · "
-                                    ) ||
-                                    "Informations complémentaires non renseignées"}
-                                </div>
-
-                                <div className="text-sm text-gray-600 mt-2">
-                                  {vehicle.places_proposees} {
-                                    vehicle.places_proposees > 1
-                                      ? "passagers maximum"
-                                      : "passager maximum"
-                                  }
-                                </div>
-
-                              </div>
-
-                              <label
-                                className={`flex items-center gap-2 text-sm font-medium ${
-                                  preferences.peut_conduire
-                                    ? "cursor-pointer"
-                                    : "cursor-not-allowed"
-                                }`}
-                              >
-
-                                <input
-                                  type="radio"
-                                  name="vehicule_defaut"
-                                  checked={
-                                    isDefault
-                                  }
-                                  disabled={
-                                    !preferences.peut_conduire
-                                  }
-                                  onChange={() =>
-                                    handleSetDefaultVehicle(
-                                      vehicle.id
-                                    )
-                                  }
-                                  className="w-5 h-5 accent-pink-600"
-                                />
-
-                                Véhicule par défaut
-
-                              </label>
-
-                            </div>
-
-                            <div className="flex flex-wrap gap-2 mt-4">
-
-                              <button
-                                type="button"
-                                disabled={
-                                  !preferences.peut_conduire ||
-                                  savingVehicle
-                                }
-                                onClick={() =>
-                                  handleEditVehicle(
-                                    vehicle
-                                  )
-                                }
-                                className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 font-medium disabled:opacity-50"
-                              >
-                                Modifier
-                              </button>
-
-                              <button
-                                type="button"
-                                disabled={
-                                  !preferences.peut_conduire ||
-                                  savingVehicle
-                                }
-                                onClick={() =>
-                                  handleDeleteVehicle(
-                                    vehicle
-                                  )
-                                }
-                                className="px-4 py-2 rounded-xl bg-red-50 border border-red-100 text-red-700 font-medium disabled:opacity-50"
-                              >
-                                Supprimer
-                              </button>
-
-                            </div>
-
-                          </div>
-
-                        );
-                      }
-                    )}
-
-                  </div>
-
-                )}
-
-              {/* -------------------------------------- */}
-              {/* AJOUT D'UN VÉHICULE                    */}
-              {/* -------------------------------------- */}
-
-              {showVehicleForm &&
-                preferences.peut_conduire && (
-
-                <div
-                  className="mt-5 bg-white border border-gray-200 rounded-2xl p-5 space-y-5"
-                >
-
-                  <h5 className="font-semibold text-gray-900">
-                    {editingVehicleId
-                      ? "Modifier le véhicule"
-                      : "Ajouter un véhicule"}
-                  </h5>
-
-                  <div>
-
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nom du véhicule
-                    </label>
-
-                    <input
-                      type="text"
-                      value={
-                        vehicleForm.libelle
-                      }
-                      onChange={(e) =>
-                        updateVehicleField(
-                          "libelle",
+            <p className="text-sm text-gray-500 mb-6">
+              Sélectionnez le site SNCF sur lequel vous
+              travaillez habituellement.
+            </p>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Site de travail
+              </label>
+
+              <select
+                value={
+                  formData.site_travail_id ??
+                  ""
+                }
+                onChange={(e) =>
+                  updateField(
+                    "site_travail_id",
+                    e.target.value
+                      ? Number(
                           e.target.value
                         )
+                      : null
+                  )
+                }
+                className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white"
+                disabled={
+                  loadingSites
+                }
+                required
+              >
+                <option value="">
+                  {loadingSites
+                    ? "Chargement..."
+                    : "Sélectionnez votre site"}
+                </option>
+
+                {sites.map(
+                  (site) => (
+                    <option
+                      key={
+                        site.id
                       }
-                      placeholder="Ma voiture"
-                      className="w-full border border-gray-200 rounded-2xl px-5 py-3"
-                      required
-                    />
-
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-
-                    <div>
-
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Marque
-                      </label>
-
-                      <input
-                        type="text"
-                        value={
-                          vehicleForm.marque
-                        }
-                        onChange={(e) =>
-                          updateVehicleField(
-                            "marque",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Peugeot"
-                        className="w-full border border-gray-200 rounded-2xl px-5 py-3"
-                      />
-
-                    </div>
-
-                    <div>
-
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Modèle
-                      </label>
-
-                      <input
-                        type="text"
-                        value={
-                          vehicleForm.modele
-                        }
-                        onChange={(e) =>
-                          updateVehicleField(
-                            "modele",
-                            e.target.value
-                          )
-                        }
-                        placeholder="308"
-                        className="w-full border border-gray-200 rounded-2xl px-5 py-3"
-                      />
-
-                    </div>
-
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-
-                    <div>
-
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Couleur
-                      </label>
-
-                      <input
-                        type="text"
-                        value={
-                          vehicleForm.couleur
-                        }
-                        onChange={(e) =>
-                          updateVehicleField(
-                            "couleur",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Gris"
-                        className="w-full border border-gray-200 rounded-2xl px-5 py-3"
-                      />
-
-                    </div>
-
-                    <div>
-
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Passagers maximum
-                      </label>
-
-                      <input
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={
-                          vehicleForm.places_proposees
-                        }
-                        onChange={(e) =>
-                          updateVehicleField(
-                            "places_proposees",
-                            e.target.value
-                          )
-                        }
-                        className="w-full border border-gray-200 rounded-2xl px-5 py-3"
-                        required
-                      />
-
-                    </div>
-
-                  </div>
-
-                  <p className="text-xs text-gray-500">
-                    Indiquez le nombre maximum de
-                    passagers que vous acceptez
-                    d'emmener, hors conducteur.
-                  </p>
-
-                  {vehicleMessage && (
-                    <div className="text-sm text-gray-700">
-                      {vehicleMessage}
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={
-                      handleSaveVehicle
-                    }
-                    disabled={
-                      savingVehicle
-                    }
-                    className="w-full bg-gray-900 text-white px-5 py-3 rounded-2xl font-semibold disabled:opacity-60"
-                  >
-                    {savingVehicle
-                      ? "Enregistrement..."
-                      : editingVehicleId
-                      ? "Enregistrer les modifications"
-                      : "Ajouter le véhicule"}
-                  </button>
-
-                </div>
-
-              )}
-
-              {!loadingVehicles &&
-                vehicles.length > 0 &&
-                !showVehicleForm &&
-                vehicleMessage && (
-
-                <div className="text-sm text-gray-700 mt-4">
-                  {vehicleMessage}
-                </div>
-
-              )}
-
+                      value={
+                        site.id
+                      }
+                    >
+                      {site.name}
+                      {site.city
+                        ? ` — ${site.city}`
+                        : ""}
+                    </option>
+                  )
+                )}
+              </select>
             </div>
+
+          </div>
 
           {/* ------------------------------------------ */}
           {/* RÉSIDENCE                                 */}
@@ -2402,34 +1481,6 @@ export default function ProfilePage() {
             </p>
 
             <div className="space-y-6">
-
-              <div>
-
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Secteur de résidence
-                </label>
-
-                <input
-                  type="text"
-                  value={
-                    formData.city
-                  }
-                  onChange={(e) =>
-                    updateField(
-                      "city",
-                      e.target.value
-                    )
-                  }
-                  className="w-full border border-gray-200 rounded-2xl px-5 py-3"
-                  required
-                />
-
-                <p className="text-xs text-gray-500 mt-2">
-                  Cette information correspond à votre
-                  secteur de résidence.
-                </p>
-
-              </div>
 
               <div>
 
@@ -2474,7 +1525,6 @@ export default function ProfilePage() {
 
                   <input
                     type="text"
-                    inputMode="numeric"
                     value={
                       residence.code_postal
                     }
@@ -2485,11 +1535,11 @@ export default function ProfilePage() {
                       )
                     }
                     className="w-full border border-gray-200 rounded-2xl px-5 py-3"
-                    placeholder="37520"
+                    placeholder="Ex. 37520"
+                    required
                     disabled={
                       loadingResidence
                     }
-                    required
                   />
 
                 </div>
@@ -2512,11 +1562,11 @@ export default function ProfilePage() {
                       )
                     }
                     className="w-full border border-gray-200 rounded-2xl px-5 py-3"
-                    placeholder="La Riche"
+                    placeholder="Ex. La Riche"
+                    required
                     disabled={
                       loadingResidence
                     }
-                    required
                   />
 
                 </div>
@@ -2524,33 +1574,327 @@ export default function ProfilePage() {
               </div>
 
             </div>
+          </div>
+
+          {/* ------------------------------------------ */}
+          {/* VÉHICULES                                 */}
+          {/* ------------------------------------------ */}
+
+          <div className="border-t border-gray-100 pt-8">
+
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Mes véhicules
+                </h3>
+
+                <p className="text-sm text-gray-500">
+                  Ajoutez les véhicules que vous utilisez
+                  pour le covoiturage.
+                </p>
+              </div>
+
+              {!showVehicleForm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetVehicleForm();
+                    setShowVehicleForm(
+                      true
+                    );
+                  }}
+                  className="px-5 py-3 rounded-2xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
+                >
+                  + Ajouter un véhicule
+                </button>
+              )}
+
+            </div>
+
+            {showVehicleForm && (
+              <div className="mt-6 bg-gray-50 border border-gray-200 rounded-3xl p-6">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nom du véhicule
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        vehicleForm.libelle
+                      }
+                      onChange={(e) =>
+                        updateVehicleField(
+                          "libelle",
+                          e.target.value
+                        )
+                      }
+                      className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white"
+                      placeholder="Ex. Ma voiture"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Marque
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        vehicleForm.marque
+                      }
+                      onChange={(e) =>
+                        updateVehicleField(
+                          "marque",
+                          e.target.value
+                        )
+                      }
+                      className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white"
+                      placeholder="Ex. Peugeot"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Modèle
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        vehicleForm.modele
+                      }
+                      onChange={(e) =>
+                        updateVehicleField(
+                          "modele",
+                          e.target.value
+                        )
+                      }
+                      className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white"
+                      placeholder="Ex. 308"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Couleur
+                    </label>
+
+                    <input
+                      type="text"
+                      value={
+                        vehicleForm.couleur
+                      }
+                      onChange={(e) =>
+                        updateVehicleField(
+                          "couleur",
+                          e.target.value
+                        )
+                      }
+                      className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white"
+                      placeholder="Ex. Gris"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Places proposées
+                    </label>
+
+                    <input
+                      type="number"
+                      min="1"
+                      value={
+                        vehicleForm.places_proposees
+                      }
+                      onChange={(e) =>
+                        updateVehicleField(
+                          "places_proposees",
+                          e.target.value
+                        )
+                      }
+                      className="w-full border border-gray-200 rounded-2xl px-5 py-3 bg-white"
+                    />
+                  </div>
+
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 mt-6">
+
+                  <button
+                    type="button"
+                    onClick={
+                      handleSaveVehicle
+                    }
+                    disabled={
+                      savingVehicle
+                    }
+                    className="px-5 py-3 rounded-2xl bg-gray-900 text-white font-semibold disabled:opacity-60"
+                  >
+                    {savingVehicle
+                      ? "Enregistrement..."
+                      : editingVehicleId
+                        ? "Modifier le véhicule"
+                        : "Ajouter le véhicule"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={
+                      resetVehicleForm
+                    }
+                    className="px-5 py-3 rounded-2xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
+                  >
+                    Annuler
+                  </button>
+
+                </div>
+
+              </div>
+            )}
+
+            {!loadingVehicles &&
+              vehicles.length === 0 &&
+              !showVehicleForm && (
+                <div className="bg-gray-50 border border-gray-200 rounded-3xl p-6 mt-6">
+                  <p className="text-gray-600">
+                    Aucun véhicule enregistré.
+                  </p>
+                </div>
+              )}
+
+            {!loadingVehicles &&
+              vehicles.length > 0 && (
+                <div className="space-y-4 mt-6">
+
+                  {vehicles.map(
+                    (vehicle) => (
+                      <div
+                        key={
+                          vehicle.id
+                        }
+                        className="bg-white border border-gray-200 rounded-3xl p-5"
+                      >
+
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+                          <div>
+                            <h4 className="font-bold text-gray-900">
+                              {
+                                vehicle.libelle
+                              }
+                            </h4>
+
+                            <p className="text-sm text-gray-500 mt-1">
+                              {[
+                                vehicle.marque,
+                                vehicle.modele,
+                                vehicle.couleur,
+                              ]
+                                .filter(
+                                  Boolean
+                                )
+                                .join(
+                                  " · "
+                                )}
+
+                              {" · "}
+
+                              {
+                                vehicle.places_proposees
+                              }{" "}
+                              place
+                              {vehicle.places_proposees >
+                              1
+                                ? "s"
+                                : ""}
+                            </p>
+                          </div>
+
+                          <div className="flex gap-2">
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                editVehicle(
+                                  vehicle
+                                )
+                              }
+                              className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Modifier
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                archiveVehicle(
+                                  vehicle
+                                )
+                              }
+                              className="px-4 py-2 rounded-xl bg-red-50 border border-red-100 text-red-700 font-medium disabled:opacity-50"
+                            >
+                              Archiver
+                            </button>
+
+                          </div>
+
+                        </div>
+
+                      </div>
+                    )
+                  )}
+
+                </div>
+              )}
+
+            {!loadingVehicles &&
+              vehicles.length > 0 &&
+              !showVehicleForm &&
+              vehicleMessage && (
+                <div className="text-sm text-gray-700 mt-4">
+                  {vehicleMessage}
+                </div>
+              )}
 
           </div>
 
-          {message && (
-            <div className="text-center text-sm text-gray-700">
-              {message}
-            </div>
-          )}
+          {/* ------------------------------------------ */}
+          {/* BOUTON ENREGISTRER                        */}
+          {/* ------------------------------------------ */}
 
-          <button
-            type="submit"
-            disabled={
-              saving ||
-              loadingResidence ||
-              loadingPreferences ||
-              loadingSites
-            }
-            className="w-full bg-gradient-to-r from-pink-600 to-red-500 text-white px-5 py-4 rounded-2xl font-semibold disabled:opacity-60"
-          >
-            {saving
-              ? "Vérification et enregistrement..."
-              : profile
-                ? "Enregistrer le profil"
-                : "Créer mon profil"}
-          </button>
+          <div className="border-t border-gray-100 pt-8">
 
-        </form>
+            {message && (
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-5 text-sm text-gray-700">
+                {message}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={
+                handleSave
+              }
+              disabled={
+                saving ||
+                loadingResidence
+              }
+              className="w-full bg-gradient-to-r from-pink-600 to-red-500 text-white px-5 py-4 rounded-2xl font-semibold disabled:opacity-60"
+            >
+              {saving
+                ? "Enregistrement..."
+                : "Enregistrer mon profil"}
+            </button>
+
+          </div>
+
+        </div>
 
       </Card>
     </div>
