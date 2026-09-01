@@ -318,12 +318,6 @@ function calculateDistanceScore(
  * --------------------------------------------------
  */
 
-export function calculateCompatibilityBase(/*
- * --------------------------------------------------
- * SCORE FINAL
- * --------------------------------------------------
- */
-
 export function calculateCompatibilityBase(
   currentUser,
   otherUser
@@ -572,9 +566,9 @@ export function calculateCompatibilityBase(
    * ------------------------------------------------
    *
    * Le score de base est volontairement limité
-   * à 75 points.
+   * à 70 points.
    *
-   * Les 25 points de proximité sont ajoutés
+   * Les 30 points de proximité sont ajoutés
    * ensuite dans calculateFinalScore().
    */
 
