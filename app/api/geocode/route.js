@@ -74,20 +74,262 @@ function houseNumberMatches(adresse, candidate) {
   );
 }
 
-export async function POST(request) {
+async function geocodeAddress({
+  adresse,
+  codePostal,
+  ville,
+}) {
+  const query =
+    `${adresse}, ${codePostal} ${ville}`;
+
+  const url =
+    `${GEOCODING_URL}?q=${encodeURIComponent(
+      query
+    )}&limit=10`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    console.error(
+      "Erreur Géoplateforme :",
+      response.status,
+      response.statusText
+    );
+
+    return {
+      success: false,
+      status: 502,
+      error:
+        "Le service de géocodage est momentanément indisponible.",
+    };
+  }
+
+  const data =
+    await response.json();
+
+  const features =
+    Array.isArray(data?.features)
+      ? data.features
+      : [];
+
+  if (features.length === 0) {
+    return {
+      success: false,
+      error:
+        "Aucune adresse correspondante n'a été trouvée.",
+    };
+  }
+
+  const normalizedInputPostal =
+    normalizePostalCode(codePostal);
+
+  const normalizedInputCity =
+    normalizeText(ville);
+
+  const candidates = features
+    .map((feature) => {
+      const properties =
+        feature?.properties ?? {};
+
+      const coordinates =
+        feature?.geometry?.coordinates;
+
+      if (
+        !Array.isArray(coordinates) ||
+        coordinates.length < 2
+      ) {
+        return null;
+      }
+
+      const longitude =
+        Number(coordinates[0]);
+
+      const latitude =
+        Number(coordinates[1]);
+
+      if (
+        !Number.isFinite(longitude) ||
+        !Number.isFinite(latitude)
+      ) {
+        return null;
+      }
+
+      const candidate = {
+        label:
+          properties.label ?? "",
+
+        score:
+          Number(properties.score ?? 0),
+
+        ban_id:
+          properties.banId ?? null,
+
+        latitude,
+        longitude,
+
+        postcode:
+          properties.postcode ?? "",
+
+        city:
+          properties.city ?? "",
+
+        citycode:
+          properties.citycode ?? "",
+
+        type:
+          properties.type ?? "",
+
+        housenumber:
+          properties.housenumber ?? "",
+
+        street:
+          properties.street ?? "",
+
+        name:
+          properties.name ?? "",
+      };
+
+      const postalMatches =
+        normalizePostalCode(
+          candidate.postcode
+        ) === normalizedInputPostal;
+
+      const cityMatches =
+        normalizeText(
+          candidate.city
+        ) === normalizedInputCity;
+
+      const streetMatch =
+        streetMatches(
+          adresse,
+          candidate
+        );
+
+      const houseNumberMatch =
+        houseNumberMatches(
+          adresse,
+          candidate
+        );
+
+      return {
+        ...candidate,
+
+        postal_matches:
+          postalMatches,
+
+        city_matches:
+          cityMatches,
+
+        street_matches:
+          streetMatch,
+
+        house_number_matches:
+          houseNumberMatch,
+      };
+    })
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        b.score - a.score
+    );
+
+  if (candidates.length === 0) {
+    return {
+      success: false,
+      error:
+        "Les résultats de géocodage sont invalides.",
+    };
+  }
+
+  const exactCandidates =
+    candidates.filter(
+      (candidate) =>
+        candidate.postal_matches &&
+        candidate.city_matches &&
+        candidate.street_matches &&
+        candidate.house_number_matches
+    );
+
+  const best =
+    exactCandidates.length > 0
+      ? exactCandidates[0]
+      : null;
+
+  if (!best) {
+    return {
+      success: false,
+      error:
+        "L'adresse n'a pas pu être identifiée précisément. Vérifiez le numéro, la rue, le code postal et la ville.",
+      candidates,
+    };
+  }
+
+  /*
+   * L'adresse est identifiée précisément.
+   * Le score BAN sert uniquement à qualifier
+   * la qualité du résultat.
+   */
+
+  const confidence =
+    best.score >= 0.5
+      ? "high"
+      : "medium";
+
+  return {
+    success: true,
+    confidence,
+
+    postal_matches:
+      best.postal_matches,
+
+    city_matches:
+      best.city_matches,
+
+    result: best,
+
+    candidates,
+  };
+}
+
+/*
+ * --------------------------------------------------
+ * GET
+ * --------------------------------------------------
+ *
+ * La page profil appelle /api/geocode en GET.
+ */
+
+export async function GET(request) {
   try {
-    const body = await request.json();
+    const { searchParams } =
+      new URL(request.url);
 
     const adresse =
-      body?.adresse?.trim() ?? "";
+      searchParams
+        .get("adresse")
+        ?.trim() ?? "";
 
     const codePostal =
-      body?.code_postal?.trim() ?? "";
+      searchParams
+        .get("code_postal")
+        ?.trim() ?? "";
 
     const ville =
-      body?.ville?.trim() ?? "";
+      searchParams
+        .get("ville")
+        ?.trim() ?? "";
 
-    if (!adresse || !codePostal || !ville) {
+    if (
+      !adresse ||
+      !codePostal ||
+      !ville
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -98,235 +340,89 @@ export async function POST(request) {
       );
     }
 
-    const query =
-      `${adresse}, ${codePostal} ${ville}`;
+    const result =
+      await geocodeAddress({
+        adresse,
+        codePostal,
+        ville,
+      });
 
-    const url =
-      `${GEOCODING_URL}?q=${encodeURIComponent(query)}&limit=10`;
+    return NextResponse.json(
+      result,
+      {
+        status:
+          result.status ?? 200,
+      }
+    );
+  } catch (error) {
+    console.error(
+      "Erreur interne de géocodage :",
+      error
+    );
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Une erreur est survenue lors du géocodage.",
       },
-      cache: "no-store",
-    });
+      { status: 500 }
+    );
+  }
+}
 
-    if (!response.ok) {
-      console.error(
-        "Erreur Géoplateforme :",
-        response.status,
-        response.statusText
-      );
+/*
+ * --------------------------------------------------
+ * POST
+ * --------------------------------------------------
+ *
+ * Conservé pour compatibilité avec d'éventuels
+ * appels existants.
+ */
 
+export async function POST(request) {
+  try {
+    const body =
+      await request.json();
+
+    const adresse =
+      body?.adresse?.trim() ?? "";
+
+    const codePostal =
+      body?.code_postal?.trim() ?? "";
+
+    const ville =
+      body?.ville?.trim() ?? "";
+
+    if (
+      !adresse ||
+      !codePostal ||
+      !ville
+    ) {
       return NextResponse.json(
         {
           success: false,
           error:
-            "Le service de géocodage est momentanément indisponible.",
+            "L'adresse, le code postal et la ville sont obligatoires.",
         },
-        { status: 502 }
+        { status: 400 }
       );
     }
 
-    const data =
-      await response.json();
-
-    const features =
-      Array.isArray(data?.features)
-        ? data.features
-        : [];
-
-    if (features.length === 0) {
-      return NextResponse.json({
-        success: false,
-        error:
-          "Aucune adresse correspondante n'a été trouvée.",
+    const result =
+      await geocodeAddress({
+        adresse,
+        codePostal,
+        ville,
       });
-    }
 
-    const normalizedInputPostal =
-      normalizePostalCode(codePostal);
-
-    const normalizedInputCity =
-      normalizeText(ville);
-
-    const candidates = features
-      .map((feature) => {
-        const properties =
-          feature?.properties ?? {};
-
-        const coordinates =
-          feature?.geometry?.coordinates;
-
-        if (
-          !Array.isArray(coordinates) ||
-          coordinates.length < 2
-        ) {
-          return null;
-        }
-
-        const longitude =
-          Number(coordinates[0]);
-
-        const latitude =
-          Number(coordinates[1]);
-
-        if (
-          !Number.isFinite(longitude) ||
-          !Number.isFinite(latitude)
-        ) {
-          return null;
-        }
-
-        const candidate = {
-          label:
-            properties.label ?? "",
-
-          score:
-            Number(properties.score ?? 0),
-
-          ban_id:
-            properties.banId ?? null,
-
-          latitude,
-          longitude,
-
-          postcode:
-            properties.postcode ?? "",
-
-          city:
-            properties.city ?? "",
-
-          citycode:
-            properties.citycode ?? "",
-
-          type:
-            properties.type ?? "",
-
-          housenumber:
-            properties.housenumber ?? "",
-
-          street:
-            properties.street ?? "",
-
-          name:
-            properties.name ?? "",
-        };
-
-        const postalMatches =
-          normalizePostalCode(
-            candidate.postcode
-          ) === normalizedInputPostal;
-
-        const cityMatches =
-          normalizeText(
-            candidate.city
-          ) === normalizedInputCity;
-
-        const streetMatch =
-          streetMatches(
-            adresse,
-            candidate
-          );
-
-        const houseNumberMatch =
-          houseNumberMatches(
-            adresse,
-            candidate
-          );
-
-        return {
-          ...candidate,
-          postal_matches:
-            postalMatches,
-          city_matches:
-            cityMatches,
-          street_matches:
-            streetMatch,
-          house_number_matches:
-            houseNumberMatch,
-        };
-      })
-      .filter(Boolean)
-      .sort(
-        (a, b) =>
-          b.score - a.score
-      );
-
-    if (candidates.length === 0) {
-      return NextResponse.json({
-        success: false,
-        error:
-          "Les résultats de géocodage sont invalides.",
-      });
-    }
-
-    /*
-     * --------------------------------------------------
-     * RECHERCHE D'UNE ADRESSE IDENTIFIÉE
-     * --------------------------------------------------
-     *
-     * On ne prend plus automatiquement le premier
-     * résultat. Une autre rue ne doit jamais être
-     * enregistrée comme si elle correspondait à
-     * l'adresse saisie.
-     */
-
-    const exactCandidates =
-      candidates.filter(
-        (candidate) =>
-          candidate.postal_matches &&
-          candidate.city_matches &&
-          candidate.street_matches &&
-          candidate.house_number_matches
-      );
-
-    const best =
-      exactCandidates.length > 0
-        ? exactCandidates[0]
-        : null;
-
-    if (!best) {
-      return NextResponse.json({
-        success: false,
-        error:
-          "L'adresse n'a pas pu être identifiée précisément. Vérifiez le numéro, la rue, le code postal et la ville.",
-        candidates,
-      });
-    }
-
-    /*
-     * --------------------------------------------------
-     * NIVEAU DE CONFIANCE
-     * --------------------------------------------------
-     *
-     * L'identité de l'adresse est prioritaire.
-     * Le score BAN sert ensuite à qualifier la qualité
-     * du résultat, sans exiger artificiellement 0,9.
-     */
-
-    let confidence = "medium";
-
-    if (best.score >= 0.5) {
-      confidence = "high";
-    }
-
-    return NextResponse.json({
-      success: true,
-
-      confidence,
-
-      postal_matches:
-        best.postal_matches,
-
-      city_matches:
-        best.city_matches,
-
-      result: best,
-
-      candidates,
-    });
+    return NextResponse.json(
+      result,
+      {
+        status:
+          result.status ?? 200,
+      }
+    );
   } catch (error) {
     console.error(
       "Erreur interne de géocodage :",
