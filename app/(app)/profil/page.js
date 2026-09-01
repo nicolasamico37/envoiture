@@ -823,13 +823,13 @@ export default function ProfilePage() {
               residence.ville.trim(),
 
             ban_id:
-              geocoded.ban_id,
+              geocoded.result.ban_id,
 
             latitude:
-              geocoded.latitude,
+              geocoded.result.latitude,
 
             longitude:
-              geocoded.longitude,
+              geocoded.result.longitude,
 
             updated_at:
               new Date().toISOString(),
