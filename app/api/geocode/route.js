@@ -3,6 +3,77 @@ import { NextResponse } from "next/server";
 const GEOCODING_URL =
   "https://data.geopf.fr/geocodage/search";
 
+function normalizeText(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[’']/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function normalizePostalCode(value) {
+  return String(value ?? "")
+    .replace(/\s/g, "")
+    .trim();
+}
+
+function extractStreetNumber(adresse) {
+  const match = String(adresse ?? "")
+    .trim()
+    .match(/^(\d+[A-Za-z]?)\b/);
+
+  return match
+    ? normalizeText(match[1])
+    : null;
+}
+
+function extractStreetName(adresse) {
+  const value = String(adresse ?? "")
+    .trim()
+    .replace(/^(\d+[A-Za-z]?)\s+/, "");
+
+  return normalizeText(value);
+}
+
+function streetMatches(adresse, candidate) {
+  const requestedStreet =
+    extractStreetName(adresse);
+
+  const candidateStreet =
+    normalizeText(candidate?.street);
+
+  const candidateName =
+    normalizeText(candidate?.name);
+
+  if (!requestedStreet) {
+    return false;
+  }
+
+  return (
+    requestedStreet === candidateStreet ||
+    requestedStreet === candidateName
+  );
+}
+
+function houseNumberMatches(adresse, candidate) {
+  const requestedNumber =
+    extractStreetNumber(adresse);
+
+  const candidateNumber =
+    normalizeText(candidate?.housenumber);
+
+  if (!requestedNumber) {
+    return true;
+  }
+
+  return (
+    requestedNumber === candidateNumber
+  );
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -27,10 +98,11 @@ export async function POST(request) {
       );
     }
 
-    const query = `${adresse}, ${codePostal} ${ville}`;
+    const query =
+      `${adresse}, ${codePostal} ${ville}`;
 
     const url =
-      `${GEOCODING_URL}?q=${encodeURIComponent(query)}&limit=5`;
+      `${GEOCODING_URL}?q=${encodeURIComponent(query)}&limit=10`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -57,7 +129,8 @@ export async function POST(request) {
       );
     }
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
     const features =
       Array.isArray(data?.features)
@@ -71,6 +144,12 @@ export async function POST(request) {
           "Aucune adresse correspondante n'a été trouvée.",
       });
     }
+
+    const normalizedInputPostal =
+      normalizePostalCode(codePostal);
+
+    const normalizedInputCity =
+      normalizeText(ville);
 
     const candidates = features
       .map((feature) => {
@@ -100,7 +179,7 @@ export async function POST(request) {
           return null;
         }
 
-        return {
+        const candidate = {
           label:
             properties.label ?? "",
 
@@ -111,7 +190,6 @@ export async function POST(request) {
             properties.banId ?? null,
 
           latitude,
-
           longitude,
 
           postcode:
@@ -125,6 +203,49 @@ export async function POST(request) {
 
           type:
             properties.type ?? "",
+
+          housenumber:
+            properties.housenumber ?? "",
+
+          street:
+            properties.street ?? "",
+
+          name:
+            properties.name ?? "",
+        };
+
+        const postalMatches =
+          normalizePostalCode(
+            candidate.postcode
+          ) === normalizedInputPostal;
+
+        const cityMatches =
+          normalizeText(
+            candidate.city
+          ) === normalizedInputCity;
+
+        const streetMatch =
+          streetMatches(
+            adresse,
+            candidate
+          );
+
+        const houseNumberMatch =
+          houseNumberMatches(
+            adresse,
+            candidate
+          );
+
+        return {
+          ...candidate,
+          postal_matches:
+            postalMatches,
+          city_matches:
+            cityMatches,
+          street_matches:
+            streetMatch,
+          house_number_matches:
+            houseNumberMatch,
         };
       })
       .filter(Boolean)
@@ -141,51 +262,54 @@ export async function POST(request) {
       });
     }
 
+    /*
+     * --------------------------------------------------
+     * RECHERCHE D'UNE ADRESSE IDENTIFIÉE
+     * --------------------------------------------------
+     *
+     * On ne prend plus automatiquement le premier
+     * résultat. Une autre rue ne doit jamais être
+     * enregistrée comme si elle correspondait à
+     * l'adresse saisie.
+     */
+
+    const exactCandidates =
+      candidates.filter(
+        (candidate) =>
+          candidate.postal_matches &&
+          candidate.city_matches &&
+          candidate.street_matches &&
+          candidate.house_number_matches
+      );
+
     const best =
-      candidates[0];
+      exactCandidates.length > 0
+        ? exactCandidates[0]
+        : null;
 
-    const normalizedInputPostal =
-      codePostal.replace(/\s/g, "");
+    if (!best) {
+      return NextResponse.json({
+        success: false,
+        error:
+          "L'adresse n'a pas pu être identifiée précisément. Vérifiez le numéro, la rue, le code postal et la ville.",
+        candidates,
+      });
+    }
 
-    const normalizedResultPostal =
-      best.postcode.replace(/\s/g, "");
+    /*
+     * --------------------------------------------------
+     * NIVEAU DE CONFIANCE
+     * --------------------------------------------------
+     *
+     * L'identité de l'adresse est prioritaire.
+     * Le score BAN sert ensuite à qualifier la qualité
+     * du résultat, sans exiger artificiellement 0,9.
+     */
 
-    const postalMatches =
-      normalizedInputPostal ===
-      normalizedResultPostal;
+    let confidence = "medium";
 
-    const normalizedInputCity =
-      ville
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toLowerCase();
-
-    const normalizedResultCity =
-      best.city
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toLowerCase();
-
-    const cityMatches =
-      normalizedInputCity ===
-      normalizedResultCity;
-
-    let confidence =
-      "low";
-
-    if (
-      best.score >= 0.9 &&
-      postalMatches &&
-      cityMatches
-    ) {
+    if (best.score >= 0.5) {
       confidence = "high";
-    } else if (
-      best.score >= 0.7 &&
-      postalMatches
-    ) {
-      confidence = "medium";
     }
 
     return NextResponse.json({
@@ -194,10 +318,10 @@ export async function POST(request) {
       confidence,
 
       postal_matches:
-        postalMatches,
+        best.postal_matches,
 
       city_matches:
-        cityMatches,
+        best.city_matches,
 
       result: best,
 
